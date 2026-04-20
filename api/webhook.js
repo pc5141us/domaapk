@@ -19,7 +19,7 @@ module.exports = async (req, res) => {
             const appId = data.replace('del_', '');
             await sendMessage(chatId, "⏳ جاري الحذف من قاعدة البيانات...");
             try {
-                await axios.post("https://script.google.com/macros/s/AKfycbwouTO-8CLhu0Rs92Oi9hbSgu8bbZj_spIlxBDiQ4ijRWVdCTPos0RoQrYJ3fXQhRtN/exec", {
+                await axios.post("https://script.google.com/macros/s/AKfycbxn8UniaDF1aQW5T_VklH61DbHpwODY_pK5irvFsSUbMrN_r-xQINfwAtBvgl9l8rC9/exec", {
                     action: "delete_item",
                     id: appId
                 });
@@ -66,7 +66,7 @@ module.exports = async (req, res) => {
             const appLink = text;
             await sendMessage(chatId, `⏳ جاري معالجة الرفع لـ ${appName}...`);
             try {
-                await axios.post("https://script.google.com/macros/s/AKfycbwouTO-8CLhu0Rs92Oi9hbSgu8bbZj_spIlxBDiQ4ijRWVdCTPos0RoQrYJ3fXQhRtN/exec", {
+                await axios.post("https://script.google.com/macros/s/AKfycbxn8UniaDF1aQW5T_VklH61DbHpwODY_pK5irvFsSUbMrN_r-xQINfwAtBvgl9l8rC9/exec", {
                     action: "add_from_vercel",
                     name: appName,
                     link: appLink
@@ -82,7 +82,7 @@ module.exports = async (req, res) => {
             const newLink = text;
             await sendMessage(chatId, `⏳ جاري تحديث الرابط لـ #${appId}...`);
             try {
-                await axios.post("https://script.google.com/macros/s/AKfycbwouTO-8CLhu0Rs92Oi9hbSgu8bbZj_spIlxBDiQ4ijRWVdCTPos0RoQrYJ3fXQhRtN/exec", {
+                await axios.post("https://script.google.com/macros/s/AKfycbxn8UniaDF1aQW5T_VklH61DbHpwODY_pK5irvFsSUbMrN_r-xQINfwAtBvgl9l8rC9/exec", {
                     action: "update_link",
                     id: appId,
                     link: newLink
@@ -113,7 +113,7 @@ module.exports = async (req, res) => {
         await sendMessage(chatId, `⏳ جاري معالجة الرفع لـ ${appName}...`);
 
         try {
-            await axios.post("https://script.google.com/macros/s/AKfycbwouTO-8CLhu0Rs92Oi9hbSgu8bbZj_spIlxBDiQ4ijRWVdCTPos0RoQrYJ3fXQhRtN/exec", {
+            await axios.post("https://script.google.com/macros/s/AKfycbxn8UniaDF1aQW5T_VklH61DbHpwODY_pK5irvFsSUbMrN_r-xQINfwAtBvgl9l8rC9/exec", {
                 action: "add_from_vercel",
                 name: appName,
                 link: appLink
@@ -173,7 +173,7 @@ async function sendMainKeyboard(chatId) {
 
 async function sendManageKeyboard(chatId) {
     try {
-        const GAS_URL = `https://script.google.com/macros/s/AKfycbwouTO-8CLhu0Rs92Oi9hbSgu8bbZj_spIlxBDiQ4ijRWVdCTPos0RoQrYJ3fXQhRtN/exec?t=${Date.now()}`;
+        const GAS_URL = `https://script.google.com/macros/s/AKfycbxn8UniaDF1aQW5T_VklH61DbHpwODY_pK5irvFsSUbMrN_r-xQINfwAtBvgl9l8rC9/exec?t=${Date.now()}`;
         const response = await axios.get(GAS_URL);
         const apps = response.data;
 
