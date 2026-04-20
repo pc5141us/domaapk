@@ -5,100 +5,107 @@ const telegramUrl = `https://api.telegram.org/bot${botToken}`;
 const GAS_URL = "https://script.google.com/macros/s/AKfycbxgr2lfK9pdy4ChWEZIey5yahTsnd9zjh1XRoffPBhQzZnLI4o-jkuQGRhiKellMg4/exec";
 
 module.exports = async (req, res) => {
-    // 1. رد فوري لتلجرام لضمان عدم تكرار الرسائل
-    res.status(200).send('OK');
+    if (req.method !== 'POST') return res.status(200).send('Bot is ready');
 
     try {
-        if (req.method !== 'POST') return;
         const update = req.body;
-        if (!update || (!update.message && !update.callback_query)) return;
+        if (!update || (!update.message && !update.callback_query)) return res.status(200).send('OK');
 
-        const chatId = update.message ? update.message.chat.id : update.callback_query.message.chat.id;
-        const text = update.message ? (update.message.text || "") : "";
+        const message = update.message;
+        const callback_query = update.callback_query;
+        const chatId = message ? message.chat.id : callback_query.message.chat.id;
 
-        // 2. معالجة الحذف (Callback)
-        if (update.callback_query) {
-            const data = update.callback_query.data;
+        // 1. الأزرار المضمنة
+        if (callback_query) {
+            const data = callback_query.data;
             if (data.startsWith('del_')) {
+                const id = data.replace('del_', '');
                 await sendMessage(chatId, "⏳ جاري الحذف...");
-                await axios.post(GAS_URL, { action: "delete_item", id: data.replace('del_', '') });
-                await sendMessage(chatId, "✅ تم الحذف بنجاح.");
+                await axios.post(GAS_URL, { action: "delete_item", id: id });
+                await sendMessage(chatId, "✅ تم الحذف.");
                 await sendManageKeyboard(chatId);
+            } else if (data === 'cancel') {
+                await sendMainKeyboard(chatId);
             }
-            return;
+            return res.status(200).send('OK');
         }
 
-        // 3. نظام الإضافة (Reply) - معالجة فائقة الأمان
-        if (update.message.reply_to_message) {
-            const reply = update.message.reply_to_message.text;
-            try {
-                if (reply.includes("أرسل اسم التطبيق")) {
-                    await sendMessage(chatId, `🖼 الخطوة 2: أرسل رابط الصورة لـ:\nAPP:[${text}]`, { reply_markup: { force_reply: true, selective: true } });
-                }
-                else if (reply.includes("الخطوة 2: أرسل رابط الصورة")) {
-                    const nameMatch = reply.match(/APP:\[(.*?)\]/);
-                    const name = nameMatch ? nameMatch[1] : "تطبيق";
-                    await sendMessage(chatId, `📝 الخطوة 3: أرسل وصف التطبيق لـ:\nAPP:[${name}]\nIMG:[${text}]`, { reply_markup: { force_reply: true, selective: true } });
-                }
-                else if (reply.includes("الخطوة 3: أرسل وصف التطبيق")) {
-                    const nameMatch = reply.match(/APP:\[(.*?)\]/);
-                    const imgMatch = reply.match(/IMG:\[(.*?)\]/);
-                    const name = nameMatch ? nameMatch[1] : "تطبيق";
-                    const img = imgMatch ? imgMatch[1] : "";
-                    await sendMessage(chatId, `🔗 الخطوة 4: أرسل رابط التحميل لـ:\nAPP:[${name}]\nIMG:[${img}]\nDESC:[${text}]`, { reply_markup: { force_reply: true, selective: true } });
-                }
-                else if (reply.includes("الخطوة 4: أرسل رابط التحميل")) {
-                    const nameMatch = reply.match(/APP:\[(.*?)\]/);
-                    const imgMatch = reply.match(/IMG:\[(.*?)\]/);
-                    const descMatch = reply.match(/DESC:\[(.*?)\]/);
-                    
-                    const name = nameMatch ? nameMatch[1] : "";
-                    const img = imgMatch ? imgMatch[1] : "";
-                    const desc = descMatch ? descMatch[1] : "";
-                    
-                    await sendMessage(chatId, "⏳ جاري الرفع والمزامنة...");
-                    await axios.post(GAS_URL, { action: "add_manual", name, icon: img, desc, link: text });
-                    await sendMessage(chatId, "✅ تمت الإضافة بنجاح للموقع!");
+        const text = message.text || "";
+
+        // 2. المحادثة المتسلسلة (إصدار V14 المستقر)
+        if (message.reply_to_message) {
+            const reply = message.reply_to_message.text;
+            
+            // الخطوة 1 -> 2
+            if (reply.includes("أرسل اسم التطبيق الآن")) {
+                await sendMessage(chatId, `🚀 الاسم: ${text}\n🖼 الخطوة 2: أرسل رابط الصورة الآن:`, { reply_markup: { force_reply: true, selective: true } });
+            }
+            // الخطوة 2 -> 3
+            else if (reply.includes("أرسل رابط الصورة الآن")) {
+                const name = reply.split("\n")[0].replace("🚀 الاسم: ", "");
+                await sendMessage(chatId, `📦 التطبيق: ${name}\n🖼 الصورة: ${text}\n📝 الخطوة 3: أرسل وصف التطبيق:`, { reply_markup: { force_reply: true, selective: true } });
+            }
+            // الخطوة 3 -> 4
+            else if (reply.includes("أرسل وصف التطبيق")) {
+                const lines = reply.split("\n");
+                const name = lines[0].replace("📦 التطبيق: ", "");
+                const icon = lines[1].replace("🖼 الصورة: ", "");
+                await sendMessage(chatId, `📍 الاسم: ${name}\n🖼 الصورة: ${icon}\n📄 الوصف: ${text}\n🔗 الخطوة الأخيرة: أرسل رابط التحميل:`, { reply_markup: { force_reply: true, selective: true } });
+            }
+            // الخطوة 4 الحفظ
+            else if (reply.includes("أرسل رابط التحميل")) {
+                const lines = reply.split("\n");
+                const name = lines[0].replace("📍 الاسم: ", "");
+                const icon = lines[1].replace("🖼 الصورة: ", "");
+                const desc = lines[2].replace("📄 الوصف: ", "");
+                const link = text;
+                
+                await sendMessage(chatId, "⏳ جاري الحفظ النهائي...");
+                try {
+                    await axios.post(GAS_URL, { action: "add_manual", name, icon, desc, link });
+                    await sendMessage(chatId, "✅ تم الحفظ بنجاح!");
                     await sendMainKeyboard(chatId);
+                } catch (e) {
+                    await sendMessage(chatId, "❌ فشل الاتصال بجوجل شيت.");
                 }
-            } catch (err) {
-                await sendMessage(chatId, "⚠️ حدث خطأ في معالجة الرد، يرجى البدء من جديد بالضغط على زر الإضافة.");
             }
-            return;
+            return res.status(200).send('OK');
         }
 
-        // 4. الأوامر العادية
+        // 3. الأوامر
         if (text === '/start' || text === '🏠 القائمة الرئيسية') {
             await sendMainKeyboard(chatId);
         }
         else if (text === '➕ إضافة APK جديد') {
-            await sendMessage(chatId, "📝 الخطوة 1: أرسل اسم التطبيق الآن:", { reply_markup: { force_reply: true, selective: true } });
+            await sendMessage(chatId, "📝 أرسل اسم التطبيق الآن:", { reply_markup: { force_reply: true, selective: true } });
         }
         else if (text === '📋 إدارة المحتوى') {
             await sendManageKeyboard(chatId);
         }
         else if (text.startsWith('⚙️ إدارة:')) {
-            const id = text.match(/\(#([^)]+)\)/);
-            if (id) {
+            const match = text.match(/\(#([^)]+)\)/);
+            if (match) {
                 await sendMessage(chatId, `🛠 إدارة التطبيق:`, {
-                    reply_markup: { inline_keyboard: [[{ text: "🗑 حذف نهائي", callback_data: `del_${id[1]}` }], [{ text: "❌ إلغاء", callback_data: "cancel" }]] }
+                    reply_markup: { inline_keyboard: [[{ text: "🗑 حذف نهائي", callback_data: `del_${match[1]}` }], [{ text: "🏠 إلغاء", callback_data: "cancel" }]] }
                 });
             }
         } else {
             await sendMainKeyboard(chatId);
         }
 
+        res.status(200).send('OK');
     } catch (e) {
-        console.error("Critical Webhook Error:", e.message);
+        console.error("Bot Error:", e.message);
+        res.status(200).send('Error');
     }
 };
 
 async function sendMainKeyboard(chatId) {
     const keyboard = {
         keyboard: [[{ text: "➕ إضافة APK جديد" }], [{ text: "📋 إدارة المحتوى" }]],
-        resize_keyboard: true, persistent: true
+        resize_keyboard: true
     };
-    await sendMessage(chatId, "🏠 لوحة تحكم دوما APK:", { reply_markup: keyboard });
+    await sendMessage(chatId, "🏠 لوحة التحكم:", { reply_markup: keyboard });
 }
 
 async function sendManageKeyboard(chatId) {
@@ -110,8 +117,10 @@ async function sendManageKeyboard(chatId) {
             resize_keyboard: true
         };
         keyboard.keyboard.push([{ text: "🏠 القائمة الرئيسية" }]);
-        await sendMessage(chatId, "📂 اختر للتعديل أو الحذف:", { reply_markup: keyboard });
-    } catch (e) { await sendMessage(chatId, "❌ خطأ في الاتصال بالبيانات."); }
+        await sendMessage(chatId, "📂 القائمة:", { reply_markup: keyboard });
+    } catch (e) {
+        await sendMessage(chatId, "❌ خطأ في جلب البيانات.");
+    }
 }
 
 async function sendMessage(chatId, text, extra = {}) {
