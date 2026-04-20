@@ -1,5 +1,6 @@
 // --- لوحة تحكم متجر دوما APK عبر تليجرام ---
-const botToken = "ضع_توكن_بوت_التليجرام_هنا";
+const botToken = "8791910472:AAFV5-CMq0QuOnPGa8QR-UmxTGOWOjySrds";
+const adminId = 682572594; 
 const telegramUrl = "https://api.telegram.org/bot" + botToken;
 
 // 1. استقبال طلبات الموقع (جلب البيانات)
@@ -22,10 +23,14 @@ function doGet(e) {
 // 2. استقبال رسائل التليجرام
 function doPost(e) {
   var update = JSON.parse(e.postData.contents);
-  if (update.callback_query) {
-    handleCallback(update.callback_query);
+  var chatId = (update.message) ? update.message.chat.id : (update.callback_query) ? update.callback_query.message.chat.id : null;
+  
+  if (chatId != adminId) {
+    sendMessage(chatId, "⚠️ عذراً، هذا البوت خاص بالأدمن فقط.");
     return;
   }
+  
+  if (update.callback_query) {
   if (update.message) {
     var chatId = update.message.chat.id;
     var text = update.message.text || "";

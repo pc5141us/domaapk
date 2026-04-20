@@ -5,6 +5,6 @@
     { "source": "/(.*)", "destination": "/$1" }
   ],
   "env": {
-    "BOT_TOKEN": "ضع_التوكن_هنا"
+    "BOT_TOKEN": "8791910472:AAFV5-CMq0QuOnPGa8QR-UmxTGOWOjySrds"
   }
 }

@@ -1,6 +1,7 @@
 const axios = require('axios');
 
 const botToken = process.env.BOT_TOKEN;
+const adminId = 682572594; // معرف الأدمن الخاص بك
 const telegramUrl = `https://api.telegram.org/bot${botToken}`;
 
 module.exports = async (req, res) => {
@@ -12,6 +13,16 @@ module.exports = async (req, res) => {
     if (!message) return res.status(200).send('OK');
 
     const chatId = message.chat.id;
+    
+    // حماية الأدمن - البوت لا يستجيب إلا لك
+    if (chatId != adminId) {
+        await axios.post(`${telegramUrl}/sendMessage`, {
+            chat_id: chatId,
+            text: "⚠️ عذراً، هذا البوت خاص بإدارة متجر دوما APK فقط."
+        });
+        return res.status(200).send('Unauthorized');
+    }
+
     const text = message.text || "";
 
     // التحكم عبر الكيبورد السفلي فقط
