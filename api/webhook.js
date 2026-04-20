@@ -52,6 +52,30 @@ module.exports = async (req, res) => {
     if (text === '/start' || text === '🏠 القائمة الرئيسية') {
         await sendMainKeyboard(chatId);
     }
+    else if (text.startsWith('/add')) {
+        const parts = text.split(" ");
+        if (parts.length < 3) {
+            await sendMessage(chatId, "⚠️ الطريقة الصحيحة:\n`/add الاسم رابط_التحميل`\n\nمثال:\n`/add Subway Surfers https://example.com/apk` ");
+            return res.status(200).send('OK');
+        }
+        
+        const appName = parts.slice(1, parts.length - 1).join(" ");
+        const appLink = parts[parts.length - 1];
+
+        await sendMessage(chatId, `⏳ جاري معالجة الرفع لـ ${appName}...`);
+
+        try {
+            await axios.post("https://script.google.com/macros/s/AKfycbwKw2kHthblC0gsMC0BQnEzITu1u1MkjR7B7smjq4pGNzuj4IRGUDGK1EiktSILdnjl/exec", {
+                action: "add_from_vercel",
+                name: appName,
+                link: appLink
+            });
+            await sendMessage(chatId, "✅ **تمت الإضافة بنجاح!** الموقع سيظهر فيه التطبيق الآن.");
+        } catch (err) {
+            await sendMessage(chatId, "❌ حدث خطأ أثناء الحفظ.");
+        }
+        await sendMainKeyboard(chatId);
+    }
     else if (text === '📋 عرض المحتوى الحالي') {
         await sendMessage(chatId, "🔎 جارٍ جلب قائمة التطبيقات من الموقع...");
         try {
