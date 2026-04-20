@@ -1,4 +1,4 @@
-// --- لوحة تحكم متجر دوما APK المتقدمة V4 ---
+// --- لوحة تحكم متجر دوما APK - نسخة Uptodown الحصرية V5 ---
 const botToken = "8791910472:AAFV5-CMq0QuOnPGa8QR-UmxTGOWOjySrds";
 const adminId = 682572594; 
 const telegramUrl = "https://api.telegram.org/bot" + botToken;
@@ -22,75 +22,61 @@ function doGet(e) {
   return ContentService.createTextOutput(JSON.stringify(result.reverse())).setMimeType(ContentService.MimeType.JSON);
 }
 
-// 2. استقبال الطلبات
 function doPost(e) {
   var update;
-  try {
-    update = JSON.parse(e.postData.contents);
-  } catch(err) {
-    return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
-  }
+  try { update = JSON.parse(e.postData.contents); } catch(err) { return ContentService.createTextOutput("OK"); }
   
-  // معالجة أوامر الحذف والإضافة من Vercel أو Bot
   if (update.action === "add_from_vercel") {
     processSmartAddManual(update.name, update.link);
-    return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
+    return ContentService.createTextOutput("Success");
   } 
   
   if (update.action === "delete_item") {
     var success = deleteItemById(update.id);
-    return ContentService.createTextOutput(success ? "Deleted" : "Not Found").setMimeType(ContentService.MimeType.TEXT);
+    return ContentService.createTextOutput(success ? "Deleted" : "Not Found");
   }
 
-  // معالجة التليجرام
   var chatId = (update.message) ? update.message.chat.id : (update.callback_query) ? update.callback_query.message.chat.id : null;
-  if (!chatId || chatId != adminId) return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
+  if (!chatId || chatId != adminId) return ContentService.createTextOutput("OK");
 
   if (update.callback_query) {
     var data = update.callback_query.data;
     if (data.startsWith("del_")) {
       var id = data.replace("del_", "");
-      var res = deleteItemById(id);
-      if (res) sendMessage(chatId, "✅ تم الحذف بنجاح من الموقع.");
-      else sendMessage(chatId, "❌ فشل إيجاد العنصر للحذف.");
+      if (deleteItemById(id)) sendMessage(chatId, "✅ تم الحذف بنجاح.");
     }
     UrlFetchApp.fetch(telegramUrl + "/answerCallbackQuery?callback_query_id=" + update.callback_query.id);
   } else if (update.message) {
     var text = update.message.text || "";
     if (text == "/start" || text == "🏠 القائمة الرئيسية") sendMainKeyboard(chatId);
-    else if (text == "➕ إضافة APK جديد") sendMessage(chatId, "أرسل: `/add الاسم الرابط` لجلب البيانات تلقائياً.");
     else if (text == "📋 عرض وحذف المحتوى") listContentForControl(chatId);
+    else if (text == "➕ إضافة APK جديد") sendMessage(chatId, "أرسل الاسم والرابط: `/add الاسم الرابط` ");
     else if (text.startsWith("/add")) processSmartAdd(chatId, text);
     else sendMainKeyboard(chatId);
   }
-  return ContentService.createTextOutput("OK").setMimeType(ContentService.MimeType.TEXT);
+  return ContentService.createTextOutput("OK");
 }
 
-// وظيفة الحذف المحسنة
 function deleteItemById(id) {
-  if (!id) return false;
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
   var data = sheet.getDataRange().getValues();
-  var targetId = id.toString().trim().toLowerCase();
-
   for (var i = 1; i < data.length; i++) {
-    var sheetId = data[i][0].toString().trim().toLowerCase();
-    if (sheetId === targetId) {
+    if (data[i][0].toString().trim() == id.toString().trim()) {
       sheet.deleteRow(i + 1);
-      SpreadsheetApp.flush(); // التأكد من تنفيذ الحذف فوراً في الشيت
+      SpreadsheetApp.flush();
       return true;
     }
   }
   return false;
 }
 
-// --- محرك البحث الذكي (Google Play + Uptodown) ---
+// --- محرك Uptodown الحصري ---
 function getSmartData(input) {
   var res = { 
     category: "apps", tag: "utility", 
     icon: "https://cdn-icons-png.flaticon.com/512/1152/1152912.png", 
     banner: "https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb",
-    desc: "نسخة مدفوعة ومفتوحة من " + input + " APK للأندرويد." 
+    desc: "تحميل " + input + " APK للأندرويد برابط مباشر من Uptodown." 
   };
   
   var options = {
@@ -100,24 +86,38 @@ function getSmartData(input) {
   };
 
   try {
-    var searchUrl = "https://play.google.com/store/search?q=" + encodeURIComponent(input) + "&c=apps&hl=ar";
-    var html = UrlFetchApp.fetch(searchUrl, options).getContentText();
-    var idMatch = html.match(/\/store\/apps\/details\?id=([a-zA-Z0-9._]+)/);
+    // 1. البحث في Uptodown
+    var searchUrl = "https://ar.uptodown.com/android/search?q=" + encodeURIComponent(input);
+    var searchHtml = UrlFetchApp.fetch(searchUrl, options).getContentText();
     
-    if (idMatch) {
-      var appHtml = UrlFetchApp.fetch("https://play.google.com/store/apps/details?id=" + idMatch[1] + "&hl=ar", options).getContentText();
-      var icon = appHtml.match(/meta property="og:image" content="([^"]+)"/);
-      if (icon) {
-        res.icon = icon[1].split("=")[0] + "=s512";
-        res.banner = res.icon.split("=")[0] + "=w1200-h630-p";
-        res.source = "Google Play";
+    // إيجاد رابط أول نتيجة بحث
+    var appLinkMatch = searchHtml.match(/href="([^"]+\.ar\.uptodown\.com\/android\/[^"]+)"/) || 
+                       searchHtml.match(/href="([^"]+\.uptodown\.com\/android\/[^"]+)"/);
+    
+    if (appLinkMatch) {
+      var appUrl = appLinkMatch[1];
+      var appHtml = UrlFetchApp.fetch(appUrl, options).getContentText();
+      
+      // سحب الأيقونة
+      var iconMatch = appHtml.match(/meta property="og:image" content="([^"]+)"/) || 
+                      appHtml.match(/<img[^>]+id="detail-app-icon"[^>]+src="([^"]+)"/);
+      if (iconMatch) {
+        res.icon = iconMatch[1];
+        res.banner = iconMatch[1];
       }
-      var desc = appHtml.match(/meta name="description" content="([^"]+)"/);
-      if (desc) res.desc = desc[1].substring(0, 150) + "...";
-      if (appHtml.includes("game") || appHtml.includes("لعبة")) res.category = "games";
-      return res;
+
+      // سحب الوصف من meta description
+      var descMatch = appHtml.match(/meta name="description" content="([^"]+)"/);
+      if (descMatch) res.desc = descMatch[1].substring(0, 150) + "...";
+
+      // تحديد التصنيف
+      if (appHtml.includes("/android/games") || appHtml.toLowerCase().includes("لعبة")) {
+        res.category = "games";
+      }
     }
-  } catch(e) {}
+  } catch(e) {
+    Logger.log("Uptodown Error: " + e);
+  }
 
   return res;
 }
@@ -127,11 +127,10 @@ function processSmartAdd(chatId, text) {
   if (parts.length < 3) return sendMessage(chatId, "⚠️ الصيغة: `/add الاسم الرابط` ");
   var name = parts.slice(1, parts.length - 1).join(" ");
   var link = parts[parts.length - 1];
-  
-  sendMessage(chatId, "🔍 جاري سحب البيانات...");
+  sendMessage(chatId, "🔍 جاري البحث في Uptodown...");
   var smart = getSmartData(name);
   saveToSheet(name, smart, link);
-  sendMessage(chatId, "✅ تم الرفع وجلب الصور تلقائياً.");
+  sendMessage(chatId, "✅ تم جلب البيانات من Uptodown بنجاح.");
 }
 
 function processSmartAddManual(name, link) {
@@ -150,14 +149,13 @@ function sendMainKeyboard(chatId) {
     keyboard: [[{ text: "➕ إضافة APK جديد" }], [{ text: "📋 عرض وحذف المحتوى" }, { text: "🌐 زيارة الموقع" }]],
     resize_keyboard: true
   };
-  sendKeyboard(chatId, "🤖 **لوحة تحكم دوما APK V4**", keyboard);
+  sendKeyboard(chatId, "🤖 **لوحة تحكم Uptodown الذكية**", keyboard);
 }
 
 function listContentForControl(chatId) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
   var data = sheet.getDataRange().getValues();
   if (data.length <= 1) return sendMessage(chatId, "📭 فارغ.");
-  sendMessage(chatId, "📋 قائمة التطبيقات (اضغط للحذف):");
   for (var i = 1; i < data.length; i++) {
     var keyboard = { inline_keyboard: [[{ text: "🗑 حذف نهائي", callback_data: "del_" + data[i][0] }]] };
     sendKeyboard(chatId, "📦 " + data[i][1], keyboard);
