@@ -1,4 +1,4 @@
-const GAMES_API_URL = "https://script.google.com/macros/s/AKfycbwKw2kHthblC0gsMC0BQnEzITu1u1MkjR7B7smjq4pGNzuj4IRGUDGK1EiktSILdnjl/exec";
+const GAMES_API_URL = "https://script.google.com/macros/s/AKfycbxYccJUczL0EPhsQUC-W7OtWCIwgTG_2w3tWF7rlso6IdIMKdVwtMhsIBHUnM9a7RPg/exec";
 
 let appsData = [];
 
