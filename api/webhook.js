@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 const botToken = process.env.BOT_TOKEN;
-const adminId = 682572594; 
+const adminId = 682572594;
 const telegramUrl = `https://api.telegram.org/bot${botToken}`;
 
 module.exports = async (req, res) => {
@@ -24,16 +24,16 @@ module.exports = async (req, res) => {
 
         if (replyText.includes("أرسل اسم التطبيق الآن")) {
             await sendMessage(chatId, `🚀 ممتاز، الاسم هو: *${text}*\n\n🔗 **الخطوة 2:** أرسل رابط التحميل الآن لـ ${text}:`, { reply_markup: { force_reply: true, selective: true } });
-        } 
+        }
         else if (replyText.includes("أرسل رابط التحميل الآن")) {
             const appName = replyText.split("لـ ")[1];
             const appLink = text;
-            
+
             await sendMessage(chatId, `⏳ جاري معالجة الرفع لـ ${appName}...`);
-            
+
             // إرسال البيانات لجوجل شيت عبر الرابط الذي قدمته
             try {
-                await axios.post("https://script.google.com/macros/s/AKfycby-vVYhaC-1GSb1wp9x0sGy0HVuZ8fqE6Oz9mbInrmRg2Pf8nwGQEv5Jnj_vJIQWS7t/exec", {
+                await axios.post("https://script.google.com/macros/s/AKfycbwKw2kHthblC0gsMC0BQnEzITu1u1MkjR7B7smjq4pGNzuj4IRGUDGK1EiktSILdnjl/exec", {
                     action: "add_from_vercel",
                     name: appName,
                     link: appLink
@@ -51,14 +51,14 @@ module.exports = async (req, res) => {
     // 2. معالجة الأوامر الرئيسية
     if (text === '/start' || text === '🏠 القائمة الرئيسية') {
         await sendMainKeyboard(chatId);
-    } 
+    }
     else if (text === '📋 عرض المحتوى الحالي') {
         await sendMessage(chatId, "🔎 جارٍ جلب قائمة التطبيقات من الموقع...");
         try {
-            const GAS_URL = "https://script.google.com/macros/s/AKfycby-vVYhaC-1GSb1wp9x0sGy0HVuZ8fqE6Oz9mbInrmRg2Pf8nwGQEv5Jnj_vJIQWS7t/exec";
+            const GAS_URL = "https://script.google.com/macros/s/AKfycbwKw2kHthblC0gsMC0BQnEzITu1u1MkjR7B7smjq4pGNzuj4IRGUDGK1EiktSILdnjl/exec";
             const response = await axios.get(GAS_URL);
             const apps = response.data;
-            
+
             if (apps.length === 0) {
                 await sendMessage(chatId, "📭 لا يوجد محتوى حالياً في الموقع.");
             } else {
@@ -71,10 +71,10 @@ module.exports = async (req, res) => {
         } catch (err) {
             await sendMessage(chatId, "❌ حدث خطأ أثناء جلب البيانات.");
         }
-    } 
+    }
     else if (text === '➕ إضافة APK جديد') {
         await sendMessage(chatId, "📝 **الخطوة 1:** أرسل اسم التطبيق الآن:", { reply_markup: { force_reply: true, selective: true } });
-    } 
+    }
     else {
         await sendMainKeyboard(chatId);
     }

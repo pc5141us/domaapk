@@ -1,4 +1,4 @@
-const GAMES_API_URL = "https://script.google.com/macros/s/AKfycby-vVYhaC-1GSb1wp9x0sGy0HVuZ8fqE6Oz9mbInrmRg2Pf8nwGQEv5Jnj_vJIQWS7t/exec"; 
+const GAMES_API_URL = "https://script.google.com/macros/s/AKfycbwKw2kHthblC0gsMC0BQnEzITu1u1MkjR7B7smjq4pGNzuj4IRGUDGK1EiktSILdnjl/exec";
 
 let appsData = [];
 
@@ -7,7 +7,7 @@ async function fetchApps() {
     try {
         const response = await fetch(GAMES_API_URL);
         const data = await response.json();
-        
+
         appsData = data.map(item => ({
             id: item.id,
             name: item.title,
@@ -20,7 +20,7 @@ async function fetchApps() {
             downloadLink: item.previewUrl,
             rating: (Math.random() * (5 - 4.5) + 4.5).toFixed(1)
         }));
-        
+
         window.dispatchEvent(new Event('dataLoaded'));
     } catch (error) {
         console.error("Error fetching apps:", error);
