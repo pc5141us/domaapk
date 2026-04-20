@@ -446,9 +446,241 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
+.fade-in {
+    animation: fadeIn 0.6s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
 @keyframes modalIn {
-    from { transform: perspective(1000px) rotateX(10deg) translateY(50px); opacity: 0; }
-    to { transform: perspective(1000px) rotateX(0) translateY(0); opacity: 1; }
+    from { transform: scale(0.9) translateY(40px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Loading State */
+.app-grid.loading {
+    opacity: 0.5;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.loader {
+    width: 48px;
+    height: 48px;
+    border: 5px solid var(--glass-border);
+    border-bottom-color: var(--primary);
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+    animation: rotation 1s linear infinite;
+    margin: 2rem auto;
+}
+
+@keyframes rotation {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Enhanced Modal Content */
+.modal-body-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.modal-header-section {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+}
+
+.modal-icon {
+    width: 140px;
+    height: 140px;
+    border-radius: 28px;
+    background: var(--surface);
+    padding: 10px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    object-fit: contain;
+}
+
+.modal-title-group h2 {
+    font-size: 2.5rem;
+    font-weight: 900;
+    margin-bottom: 1rem;
+    background: linear-gradient(90deg, var(--text-main), var(--text-dim));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.modal-tags {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.tag-chip {
+    padding: 0.4rem 1rem;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 50px;
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tag-chip i {
+    color: var(--primary);
+}
+
+.modal-description {
+    background: rgba(255,255,255,0.03);
+    padding: 1.5rem;
+    border-radius: 20px;
+    border: 1px solid var(--glass-border);
+}
+
+.modal-description h3 {
+    margin-bottom: 1rem;
+    color: var(--accent);
+}
+
+.modal-description p {
+    color: var(--text-dim);
+    line-height: 1.8;
+}
+
+.download-btn-large {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    text-decoration: none;
+    border-radius: 18px;
+    font-size: 1.25rem;
+    font-weight: 800;
+    transition: var(--transition);
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.download-btn-large:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px var(--primary-glow);
+    filter: brightness(1.1);
+}
+
+/* Confirmation Modal Specifics */
+.confirmation-content {
+    max-width: 500px;
+    text-align: center;
+    padding: 3rem 2rem;
+}
+
+.safety-badge {
+    width: 80px;
+    height: 80px;
+    background: rgba(34, 211, 238, 0.1);
+    color: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    margin: 0 auto 1.5rem;
+    border: 2px solid var(--accent);
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
+}
+
+.confirm-title {
+    font-size: 1.8rem;
+    margin-bottom: 2rem;
+    color: var(--text-main);
+}
+
+.app-confirm-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--surface);
+    padding: 1rem;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+    text-align: right;
+}
+
+.confirm-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+}
+
+.confirm-meta h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.2rem;
+}
+
+.confirm-meta span {
+    font-size: 0.8rem;
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.features-list {
+    list-style: none;
+    text-align: right;
+    margin-bottom: 2rem;
+    background: rgba(255,255,255,0.03);
+    padding: 1.5rem;
+    border-radius: 15px;
+}
+
+.features-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    color: var(--text-dim);
+    font-size: 0.95rem;
+}
+
+.features-list li i {
+    color: #10b981; /* Green check */
+}
+
+.download-timer {
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    color: var(--text-dim);
+}
+
+#finalDownloadBtn.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    filter: grayscale(1);
+}
+
+.disclaimer {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 1.5rem;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+    70% { transform: scale(1.02); box-shadow: 0 0 0 15px rgba(99, 102, 241, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+}
+
+.close-download-modal {
+    position: absolute;
+    left: 1.5rem;
+    top: 1.5rem;
+    font-size: 1.5rem;
+    color: var(--text-dim);
+    cursor: pointer;
 }
 
 /* Media Queries */
@@ -458,4 +690,7 @@ body {
     .hero h1 { font-size: 2.5rem; }
     .hero-stats { gap: 1.5rem; flex-wrap: wrap; }
     .footer-content { grid-template-columns: 1fr; gap: 2rem; }
+    .modal-header-section { flex-direction: column; text-align: center; }
+    .modal-content { padding: 1.5rem; margin: 10% auto; }
+    .modal-title-group h2 { font-size: 1.8rem; }
 }
