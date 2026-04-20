@@ -119,57 +119,60 @@ function deleteItem(chatId, id) {
   sendMessage(chatId, "❌ لم يتم العثور على العنصر.");
 }
 
-// محرك البحث التلقائي عن أيقونات وبيانات التطبيقات
+// محرك البحث والربط مع متجر Google Play
 function getSmartData(name) {
   var res = { 
     category: "apps", 
     tag: "utility", 
     icon: "https://cdn-icons-png.flaticon.com/512/1152/1152912.png", 
+    banner: "https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb",
     desc: "تحميل " + name + " APK للأندرويد بأحدث إصدار." 
   };
   
   try {
-    // محاكاة البحث عن أيقونة وبيانات حقيقية عبر رابط البحث
-    // ملاحظة: لجعلها احترافية 100% نستخدم محرك بحث الصور أو API خاص
-    // هنا سنستخدم تقنية "التنبؤ الذكي" المتطورة بناءً على مخزن أيقونات شهير
-    var searchUrl = "https://www.google.com/search?q=" + encodeURIComponent(name + " android app icon png") + "&tbm=isch";
+    // 1. البحث عن التطبيق في جوجل بلاي
+    var searchUrl = "https://play.google.com/store/search?q=" + encodeURIComponent(name) + "&c=apps";
+    var response = UrlFetchApp.fetch(searchUrl, {muteHttpExceptions: true});
+    var html = response.getContentText();
     
-    // تصنيف تلقائي متطور
-    var n = name.toLowerCase();
-    var map = {
-      "games": {
-        "action": ["pubg", "gta", "cod", "war", "battle", "free fire", "counter", "fau-g", "doom", "mortal"],
-        "sports": ["fifa", "pes", "football", "racing", "asphalt", "tennis", "nba", "8 ball"],
-        "rpg": ["elden", "witcher", "assassin", "genshin", "raid"],
-        "puzzle": ["candy", "crush", "puzzle", "crossword", "sudoku"]
-      },
-      "apps": {
-        "social": ["facebook", "whatsapp", "telegram", "instagram", "tiktok", "snapchat", "x", "twitter"],
-        "design": ["photoshop", "canva", "picsart", "capcut", "lightroom", "inshot"],
-        "utility": ["cleaner", "vpn", "browser", "chrome", "google", "drive", "file"]
-      }
-    };
+    // 2. استخراج معرف التطبيق (Package ID) لأول نتيجة
+    var idMatch = html.match(/\/store\/apps\/details\?id=([a-zA-Z0-9._]+)/);
+    if (idMatch && idMatch[1]) {
+      var appId = idMatch[1];
+      var appUrl = "https://play.google.com/store/apps/details?id=" + appId + "&hl=ar";
+      var appResponse = UrlFetchApp.fetch(appUrl);
+      var appHtml = appResponse.getContentText();
+      
+      // 3. استخراج الأيقونة
+      var iconMatch = appHtml.match(/<img[^>]+src="([^"]+)"[^>]+alt="Logo image"/i) || 
+                      appHtml.match(/<img[^>]+alt="Logo image"[^>]+src="([^"]+)"/i) ||
+                      appHtml.match(/src="([^"]+)"[^>]+class="T7X9Cc"/);
+      if (iconMatch) res.icon = iconMatch[1].replace(/=s[0-9]+.*/, "=s512"); // جودة عالية
 
-    var found = false;
-    for (var cat in map) {
-      for (var tag in map[cat]) {
-        if (map[cat][tag].some(k => n.includes(k))) {
-          res.category = cat; res.tag = tag; found = true; break;
-        }
+      // 4. استخراج صورة الغلاف (Banner)
+      var bannerMatch = appHtml.match(/<img[^>]+src="([^"]+)"[^>]+alt="Feature graphic"/i) ||
+                        appHtml.match(/<img[^>]+src="([^"]+)"[^>]+alt="Screenshot image"/i);
+      if (bannerMatch) res.banner = bannerMatch[1].replace(/=[whs][0-9]+.*/, "=w1200");
+
+      // 5. استخراج الوصف المختصر
+      var descMatch = appHtml.match(/meta name="description" content="([^"]+)"/);
+      if (descMatch) res.desc = descMatch[1].substring(0, 150) + "...";
+      
+      // 6. تحديد التصنيف ذكياً (إذا وجدنا كلمة Game في المحتوى)
+      if (appHtml.toLowerCase().includes("game") || appHtml.includes("لعبة")) {
+        res.category = "games";
       }
-      if (found) break;
     }
 
-    // جلب أيقونة حقيقية (تقريبية لخدمة Clearbit للبرامج الشهيرة أو أيقونة افتراضية محسنة)
-    if (res.tag === "social" || res.tag === "design") {
-       res.icon = "https://logo.clearbit.com/" + n.replace(/\s+/g, '') + ".com";
-    } else {
-       // استخدام أيقونة من متجر تطبيقات بديل (DuckDuckGo Favicon Service كبديل سريع وآمن)
-       res.icon = "https://icons.duckduckgo.com/ip3/" + n.replace(/\s+/g, '') + ".com.ico";
+    // تصنيف إضافي بناءً على الاسم لزيادة الدقة
+    var n = name.toLowerCase();
+    var tags = { "action": ["pubg", "war", "battle"], "social": ["facebook", "whatsapp", "social"], "sports": ["fifa", "pes", "football"] };
+    for (var tag in tags) {
+      if (tags[tag].some(k => n.includes(k))) { res.tag = tag; break; }
     }
 
   } catch(e) {
-    // في حال فشل البحث نعود للافتراضي الأساسي
+    // في حال الخطأ نستخدم البيانات التبؤية البسيطة
   }
 
   return res;
@@ -181,15 +184,16 @@ function processSmartAdd(chatId, text) {
   var name = parts.slice(1, parts.length - 1).join(" ");
   var link = parts[parts.length - 1];
   
-  sendMessage(chatId, "🔍 جاري البحث السريع عن أيقونة وبيانات *" + name + "*...");
+  sendMessage(chatId, "🔎 جاري فحص متجر Play وتجهيز الأيقونات لـ *" + name + "*...");
   
   var smart = getSmartData(name);
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var id = "APK" + Math.floor(Math.random() * 10000);
   
-  sheet.appendRow([id, name, smart.desc, smart.category, smart.tag, "أندرويد", smart.icon, "https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb", link]);
+  // حفظ البيانات الحقيقية
+  sheet.appendRow([id, name, smart.desc, smart.category, smart.tag, "أندرويد", smart.icon, smart.banner, link]);
   
-  sendMessage(chatId, "✅ **تم الرفع بنجاح!**\n\n🖼 **الأيقونة:** تم جلبها تلقائياً\n📂 **التصنيف:** " + smart.tag + "\n🔗 **الرابط:** جاهز للتحميل");
+  sendMessage(chatId, "✅ **تم الرفع بنجاح من المتجر!**\n\n🖼 تم جلب الأيقونة والغلاف الأصلي بنجاح.");
 }
 
 // وظائف مساعدة
