@@ -33,7 +33,7 @@ module.exports = async (req, res) => {
             
             // إرسال البيانات لجوجل شيت عبر الرابط الذي قدمته
             try {
-                await axios.post("https://script.google.com/macros/s/AKfycbx62qKg3x8gFAxF-tvQs176D9sN1NE292afMHSLDSSd3fZaxdzgA16C0HatmU-_PTZQ/exec", {
+                await axios.post("https://script.google.com/macros/s/AKfycby-vVYhaC-1GSb1wp9x0sGy0HVuZ8fqE6Oz9mbInrmRg2Pf8nwGQEv5Jnj_vJIQWS7t/exec", {
                     action: "add_from_vercel",
                     name: appName,
                     link: appLink
@@ -51,6 +51,26 @@ module.exports = async (req, res) => {
     // 2. معالجة الأوامر الرئيسية
     if (text === '/start' || text === '🏠 القائمة الرئيسية') {
         await sendMainKeyboard(chatId);
+    } 
+    else if (text === '📋 عرض المحتوى الحالي') {
+        await sendMessage(chatId, "🔎 جارٍ جلب قائمة التطبيقات من الموقع...");
+        try {
+            const GAS_URL = "https://script.google.com/macros/s/AKfycby-vVYhaC-1GSb1wp9x0sGy0HVuZ8fqE6Oz9mbInrmRg2Pf8nwGQEv5Jnj_vJIQWS7t/exec";
+            const response = await axios.get(GAS_URL);
+            const apps = response.data;
+            
+            if (apps.length === 0) {
+                await sendMessage(chatId, "📭 لا يوجد محتوى حالياً في الموقع.");
+            } else {
+                let list = "📦 **المحتوى الحالي على الموقع:**\n\n";
+                apps.forEach((app, index) => {
+                    list += `${index + 1}. ${app.title}\n`;
+                });
+                await sendMessage(chatId, list);
+            }
+        } catch (err) {
+            await sendMessage(chatId, "❌ حدث خطأ أثناء جلب البيانات.");
+        }
     } 
     else if (text === '➕ إضافة APK جديد') {
         await sendMessage(chatId, "📝 **الخطوة 1:** أرسل اسم التطبيق الآن:", { reply_markup: { force_reply: true, selective: true } });
