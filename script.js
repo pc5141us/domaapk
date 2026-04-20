@@ -201,7 +201,7 @@ window.prepareDownload = function(appId) {
             </ul>
 
             <div class="download-timer" id="timerContainer">
-                <p>سيتم تجهيز الرابط المباشر خلال <span id="seconds">5</span> ثوانٍ...</p>
+                <p>سيتم تجهيز الرابط المباشر خلال <span id="seconds">7</span> ثوانٍ...</p>
             </div>
 
             <a href="${app.downloadLink}" id="finalDownloadBtn" class="download-btn-large disabled" target="_blank">
@@ -215,7 +215,7 @@ window.prepareDownload = function(appId) {
     downloadModal.style.display = "block";
 
     // تفعيل مؤقت بسيط لإعطاء انطباع بالاحترافية والفحص
-    let seconds = 5;
+    let seconds = 7;
     const timerText = document.getElementById('seconds');
     const finalBtn = document.getElementById('finalDownloadBtn');
     
