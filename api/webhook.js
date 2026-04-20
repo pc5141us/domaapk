@@ -24,11 +24,14 @@ module.exports = async (req, res) => {
                     id: appId
                 });
                 await sendMessage(chatId, "✅ تم الحذف بنجاح!");
+                // تحديث الكيبورد فوراً بعد الحذف
+                await sendManageKeyboard(chatId);
             } catch (e) {
                 await sendMessage(chatId, "❌ فشل الحذف.");
             }
         }
         else if (data.startsWith('editlink_')) {
+// ... (سيتم إكمال الوظيفة في استبدال شامل لاحقاً أو التأكد من وجودها)
             const appId = data.replace('editlink_', '');
             await sendMessage(chatId, `🔗 **أرسل الرابط الجديد الآن لـ (#${appId}):**\n*(يرجى الرد على هذه الرسالة)*`, { 
                 reply_markup: { force_reply: true, selective: true } 
@@ -121,28 +124,7 @@ module.exports = async (req, res) => {
         await sendMainKeyboard(chatId);
     }
     else if (text === '📋 عرض المحتوى الحالي' || text === '📋 إدارة المحتوى') {
-        await sendMessage(chatId, "🔎 جارٍ جلب قائمة التطبيقات للإدارة...");
-        try {
-            const GAS_URL = `https://script.google.com/macros/s/AKfycbw0KbVLghDkg5f_IPTdgaqjLCz4GksEf_a2_AdfMyk9MA7w22szqWfJGg6jXLF2M2Rm/exec?t=${Date.now()}`;
-            const response = await axios.get(GAS_URL);
-            const apps = response.data;
-
-            if (apps.length === 0) {
-                await sendMessage(chatId, "📭 لا يوجد محتوى حالياً.");
-            } else {
-                const keyboard = {
-                    keyboard: apps.map(app => [{ text: `⚙️ إدارة: ${app.title} (#${app.id})` }]),
-                    resize_keyboard: true,
-                    one_time_keyboard: false,
-                    is_persistent: true
-                };
-                keyboard.keyboard.push([{ text: "🏠 القائمة الرئيسية" }]);
-                
-                await sendMessage(chatId, "👇 **اختر التطبيق الذي تريد تعديله أو حذفه:**", { reply_markup: keyboard });
-            }
-        } catch (err) {
-            await sendMessage(chatId, "❌ حدث خطأ أثناء جلب البيانات.");
-        }
+        await sendManageKeyboard(chatId);
     }
     else if (text.startsWith('⚙️ إدارة:')) {
         const idMatch = text.match(/\(#([^)]+)\)/);
@@ -183,6 +165,29 @@ async function sendMainKeyboard(chatId) {
         persistent: true
     };
     await sendMessage(chatId, "🎮 **تحكم بمتجرك بسهولة عبر الأزرار أدناه:**", { reply_markup: keyboard });
+}
+
+async function sendManageKeyboard(chatId) {
+    try {
+        const GAS_URL = `https://script.google.com/macros/s/AKfycbw0KbVLghDkg5f_IPTdgaqjLCz4GksEf_a2_AdfMyk9MA7w22szqWfJGg6jXLF2M2Rm/exec?t=${Date.now()}`;
+        const response = await axios.get(GAS_URL);
+        const apps = response.data;
+
+        if (apps.length === 0) {
+            await sendMessage(chatId, "📭 لا يوجد محتوى حالياً.");
+        } else {
+            const keyboard = {
+                keyboard: apps.map(app => [{ text: `⚙️ إدارة: ${app.title} (#${app.id})` }]),
+                resize_keyboard: true,
+                one_time_keyboard: false,
+                is_persistent: true
+            };
+            keyboard.keyboard.push([{ text: "🏠 القائمة الرئيسية" }]);
+            await sendMessage(chatId, "👇 **اختر التطبيق الذي تريد تعديله أو حذفه:**", { reply_markup: keyboard });
+        }
+    } catch (err) {
+        await sendMessage(chatId, "❌ حدث خطأ أثناء جلب قائمة التطبيقات.");
+    }
 }
 
 async function sendMessage(chatId, text, extraParams = {}) {
