@@ -18,21 +18,12 @@ module.exports = async (req, res) => {
         return res.status(200).send('Unauthorized');
     }
 
-    // 1. القائمة الرئيسية
-    if (text === '/start' || text === '🏠 القائمة الرئيسية') {
-        await sendMainKeyboard(chatId);
-    } 
-    // 2. طلب الاسم (الخطوة الأولى)
-    else if (text === '➕ إضافة APK جديد') {
-        await sendMessage(chatId, "📝 **الخطوة 1:** أرسل اسم التطبيق الآن:", { force_reply: true });
-    } 
-    // 3. معالجة الردود (الخطوات التالية)
-    else if (message.reply_to_message) {
+    // 1. معالجة الردود أولاً (الخطوات التفاعلية)
+    if (message.reply_to_message) {
         const replyText = message.reply_to_message.text;
 
         if (replyText.includes("أرسل اسم التطبيق الآن")) {
-            // حفظنا الاسم في المتصفح مؤقتاً عبر طلب الرابط والرد عليه
-            await sendMessage(chatId, `🚀 ممتاز، الاسم هو: *${text}*\n\n🔗 **الخطوة 2:** أرسل رابط التحميل الآن لـ ${text}:`, { force_reply: true });
+            await sendMessage(chatId, `🚀 ممتاز، الاسم هو: *${text}*\n\n🔗 **الخطوة 2:** أرسل رابط التحميل الآن لـ ${text}:`, { reply_markup: { force_reply: true, selective: true } });
         } 
         else if (replyText.includes("أرسل رابط التحميل الآن")) {
             const appName = replyText.split("لـ ")[1];
@@ -40,11 +31,20 @@ module.exports = async (req, res) => {
             
             await sendMessage(chatId, `⏳ جاري معالجة الرفع...\n📦 **الاسم:** ${appName}\n🔗 **الرابط:** ${appLink}`);
             
-            // هنا تضع كود إرسال البيانات لقاعدة بياناتك
-            await sendMessage(chatId, "✅ **تمت الإضافة بنجاح!** الموقع سيظهر فيه التطبيق الآن.", null);
+            // هنا يتم الربط مع قاعدة بياناتك (مثل Google Sheets API)
+            await sendMessage(chatId, "✅ **تمت الإضافة بنجاح!** الموقع سيظهر فيه التطبيق الآن.");
             await sendMainKeyboard(chatId);
         }
+        return res.status(200).send('OK');
     }
+
+    // 2. معالجة الأوامر الرئيسية
+    if (text === '/start' || text === '🏠 القائمة الرئيسية') {
+        await sendMainKeyboard(chatId);
+    } 
+    else if (text === '➕ إضافة APK جديد') {
+        await sendMessage(chatId, "📝 **الخطوة 1:** أرسل اسم التطبيق الآن:", { reply_markup: { force_reply: true, selective: true } });
+    } 
     else {
         await sendMainKeyboard(chatId);
     }
@@ -62,19 +62,19 @@ async function sendMainKeyboard(chatId) {
         resize_keyboard: true,
         persistent: true
     };
-    await sendMessage(chatId, "🎮 **مرحباً بك يا أدمن!**\nتحكم بمتجرك بسهولة عبر الأزرار أدناه:", { reply_markup: keyboard });
+    await sendMessage(chatId, "🎮 **تحكم بمتجرك بسهولة عبر الأزرار أدناه:**", { reply_markup: keyboard });
 }
 
-async function sendMessage(chatId, text, options = {}) {
+async function sendMessage(chatId, text, extraParams = {}) {
     const payload = {
         chat_id: chatId,
         text: text,
         parse_mode: 'Markdown',
-        ...options
+        ...extraParams
     };
     try {
         await axios.post(`${telegramUrl}/sendMessage`, payload);
     } catch (e) {
-        console.error("Telegram API Error");
+        console.error("Telegram API Error:", e.response ? e.response.data : e.message);
     }
 }
