@@ -40,6 +40,15 @@ function doPost(e) {
             return ContentService.createTextOutput("Deleted").setMimeType(ContentService.MimeType.TEXT);
         }
     }
+  } else if (update.action === "update_link") {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+        if (data[i][0] == update.id) {
+            sheet.getRange(i + 1, 9).setValue(update.link); // العمود 9 هو رابط التحميل
+            return ContentService.createTextOutput("Updated").setMimeType(ContentService.MimeType.TEXT);
+        }
+    }
   }
 
   var chatId = (update.message) ? update.message.chat.id : (update.callback_query) ? update.callback_query.message.chat.id : null;
