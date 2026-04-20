@@ -347,20 +347,23 @@ body {
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.8);
-    backdrop-filter: blur(8px);
+    background-color: rgba(0,0,0,0.85);
+    backdrop-filter: blur(12px);
+    overflow-y: auto; /* يسمح بالتمرير إذا كان المحتوى طويلاً */
+    padding: 20px 0;
 }
 
 .modal-content {
     background: var(--background);
     border: 1px solid var(--glass-border);
-    margin: 5% auto;
-    width: 90%;
-    max-width: 800px;
-    border-radius: 30px;
+    margin: 2rem auto;
+    width: 95%;
+    max-width: 700px;
+    border-radius: 32px;
     padding: 2.5rem;
     position: relative;
-    animation: modalIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation: modalIn 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
 
 .close-modal {
@@ -580,23 +583,23 @@ body {
 }
 
 .safety-badge {
-    width: 80px;
-    height: 80px;
+    width: 60px;
+    height: 60px;
     background: rgba(34, 211, 238, 0.1);
     color: var(--accent);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2.5rem;
-    margin: 0 auto 1.5rem;
+    font-size: 2rem;
+    margin: 0 auto 1rem;
     border: 2px solid var(--accent);
     box-shadow: 0 0 20px rgba(34, 211, 238, 0.3);
 }
 
 .confirm-title {
-    font-size: 1.8rem;
-    margin-bottom: 2rem;
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
     color: var(--text-main);
 }
 
@@ -605,9 +608,9 @@ body {
     align-items: center;
     gap: 1rem;
     background: var(--surface);
-    padding: 1rem;
+    padding: 0.75rem;
     border-radius: 15px;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     text-align: right;
 }
 
@@ -631,9 +634,9 @@ body {
 .features-list {
     list-style: none;
     text-align: right;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     background: rgba(255,255,255,0.03);
-    padding: 1.5rem;
+    padding: 1rem;
     border-radius: 15px;
 }
 
@@ -641,9 +644,9 @@ body {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     color: var(--text-dim);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
 }
 
 .features-list li i {
@@ -691,6 +694,7 @@ body {
     .hero-stats { gap: 1.5rem; flex-wrap: wrap; }
     .footer-content { grid-template-columns: 1fr; gap: 2rem; }
     .modal-header-section { flex-direction: column; text-align: center; }
-    .modal-content { padding: 1.5rem; margin: 10% auto; }
+    .modal-content { padding: 1.5rem 1rem; margin: 1rem auto; width: 92%; }
     .modal-title-group h2 { font-size: 1.8rem; }
+    .confirmation-content { padding: 2rem 1rem; }
 }
