@@ -31,6 +31,15 @@ function doPost(e) {
     var id = "APK" + Math.floor(Math.random() * 10000);
     sheet.appendRow([id, update.name, smart.desc, smart.category, smart.tag, "أندرويد متوافق", smart.icon, smart.banner, update.link]);
     return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
+  } else if (update.action === "delete_item") {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+        if (data[i][0] == update.id) {
+            sheet.deleteRow(i + 1);
+            return ContentService.createTextOutput("Deleted").setMimeType(ContentService.MimeType.TEXT);
+        }
+    }
   }
 
   var chatId = (update.message) ? update.message.chat.id : (update.callback_query) ? update.callback_query.message.chat.id : null;

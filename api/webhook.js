@@ -7,9 +7,30 @@ const telegramUrl = `https://api.telegram.org/bot${botToken}`;
 module.exports = async (req, res) => {
     if (req.method !== 'POST') return res.status(200).send('Active');
 
-    const { message } = req.body;
-    if (!message) return res.status(200).send('OK');
+    const { message, callback_query } = req.body;
+    
+    // التعامل مع ضغطات الأزرار (الحذف والتعديل)
+    if (callback_query) {
+        const chatId = callback_query.message.chat.id;
+        const data = callback_query.data;
 
+        if (data.startsWith('del_')) {
+            const appId = data.replace('del_', '');
+            await sendMessage(chatId, "⏳ جاري الحذف من قاعدة البيانات...");
+            try {
+                await axios.post("https://script.google.com/macros/s/AKfycbz9qFyXw9ij44UFs9409tx39j3uSlYFlVokdAVtB0ElNiAncl2EWDl4Ajz6VDKOk0x7/exec", {
+                    action: "delete_item",
+                    id: appId
+                });
+                await sendMessage(chatId, "✅ تم الحذف بنجاح!");
+            } catch (e) {
+                await sendMessage(chatId, "❌ فشل الحذف.");
+            }
+        }
+        return res.status(200).send('OK');
+    }
+
+    if (!message) return res.status(200).send('OK');
     const chatId = message.chat.id;
     const text = message.text || "";
 
@@ -77,24 +98,51 @@ module.exports = async (req, res) => {
         await sendMainKeyboard(chatId);
     }
     else if (text === '📋 عرض المحتوى الحالي') {
-        await sendMessage(chatId, "🔎 جارٍ جلب قائمة التطبيقات من الموقع...");
+        await sendMessage(chatId, "🔎 جارٍ جلب قائمة التطبيقات...");
         try {
             const GAS_URL = "https://script.google.com/macros/s/AKfycbz9qFyXw9ij44UFs9409tx39j3uSlYFlVokdAVtB0ElNiAncl2EWDl4Ajz6VDKOk0x7/exec";
             const response = await axios.get(GAS_URL);
             const apps = response.data;
 
             if (apps.length === 0) {
-                await sendMessage(chatId, "📭 لا يوجد محتوى حالياً في الموقع.");
+                await sendMessage(chatId, "📭 لا يوجد محتوى حالياً.");
             } else {
-                let list = "📦 **المحتوى الحالي على الموقع:**\n\n";
-                apps.forEach((app, index) => {
-                    list += `${index + 1}. ${app.title}\n`;
-                });
-                await sendMessage(chatId, list);
+                // إنشاء كيبورد يحتوي على أسماء التطبيقات
+                const keyboard = {
+                    keyboard: apps.map(app => [{ text: `🗑 حذف: ${app.title}` }]),
+                    resize_keyboard: true,
+                    one_time_keyboard: true
+                };
+                keyboard.keyboard.push([{ text: "🏠 القائمة الرئيسية" }]);
+                
+                await sendMessage(chatId, "👇 **اختر التطبيق الذي تريد حذفه من الكيبورد أدناه:**", { reply_markup: keyboard });
             }
         } catch (err) {
             await sendMessage(chatId, "❌ حدث خطأ أثناء جلب البيانات.");
         }
+    }
+    else if (text.startsWith('🗑 حذف:')) {
+        const appTitle = text.replace('🗑 حذف: ', '');
+        await sendMessage(chatId, `⏳ جاري حذف ${appTitle}...`);
+        
+        try {
+            // جلب البيانات للبحث عن الـ ID بموجب الاسم
+            const response = await axios.get("https://script.google.com/macros/s/AKfycbz9qFyXw9ij44UFs9409tx39j3uSlYFlVokdAVtB0ElNiAncl2EWDl4Ajz6VDKOk0x7/exec");
+            const app = response.data.find(a => a.title === appTitle);
+            
+            if (app) {
+                await axios.post("https://script.google.com/macros/s/AKfycbz9qFyXw9ij44UFs9409tx39j3uSlYFlVokdAVtB0ElNiAncl2EWDl4Ajz6VDKOk0x7/exec", {
+                    action: "delete_item",
+                    id: app.id
+                });
+                await sendMessage(chatId, `✅ تم حذف ${appTitle} بنجاح!`);
+            } else {
+                await sendMessage(chatId, "❌ لم يتم العثور على التطبيق.");
+            }
+        } catch (e) {
+            await sendMessage(chatId, "❌ فشل الحذف.");
+        }
+        await sendMainKeyboard(chatId);
     }
     else if (text === '➕ إضافة APK جديد') {
         await sendMessage(chatId, "📝 **الخطوة 1:** أرسل اسم التطبيق الآن:", { reply_markup: { force_reply: true, selective: true } });
