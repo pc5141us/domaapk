@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/(.*)", "destination": "/$1" }
+  ],
+  "env": {
+    "BOT_TOKEN": "ضع_التوكن_هنا"
+  }
+}
