@@ -24,7 +24,8 @@ module.exports = async (req, res) => {
                     id: appId
                 });
                 await sendMessage(chatId, "✅ تم الحذف بنجاح!");
-                // تحديث الكيبورد فوراً بعد الحذف
+                // انتظار ثانية واحدة لضمان تحديث بيانات جوجل
+                await new Promise(resolve => setTimeout(resolve, 1500));
                 await sendManageKeyboard(chatId);
             } catch (e) {
                 await sendMessage(chatId, "❌ فشل الحذف.");
@@ -146,6 +147,9 @@ module.exports = async (req, res) => {
     // ... باقي معالجة الحذف في callback_query تم تحديثها بالأعلى لتشمل التعديل أيضاً
     else if (text === '➕ إضافة APK جديد') {
         await sendMessage(chatId, "📝 **الخطوة 1:** أرسل اسم التطبيق الآن:", { reply_markup: { force_reply: true, selective: true } });
+    }
+    else if (text === '🌐 زيارة المتجر') {
+        await sendMessage(chatId, "🔗 يمكنك زيارة متجرك من هذا الرابط:\n\nhttps://domaapk.vercel.app/");
     }
     else {
         await sendMainKeyboard(chatId);
