@@ -2,7 +2,7 @@ const axios = require('axios');
 
 const botToken = "8791910472:AAFV5-CMq0QuOnPGa8QR-UmxTGOWOjySrds";
 const telegramUrl = `https://api.telegram.org/bot${botToken}`;
-const GAS_URL = "https://script.google.com/macros/s/AKfycbxgr2lfK9pdy4ChWEZIey5yahTsnd9zjh1XRoffPBhQzZnLI4o-jkuQGRhiKellMg4/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwaYQWtzwHx4MoWCvrpXM3Z4_bBqb3aMI4vjrrKWffnKs3AEgQpQVlY9uegN5_6WOBL/exec";
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') return res.status(200).send('Bot is ready');

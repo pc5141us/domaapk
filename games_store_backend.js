@@ -1,4 +1,4 @@
-// --- لوحة تحكم متجر دوما APK - الإصدار اليدوي الكامل V10 ---
+// --- لوحة تحكم متجر دوما APK - الإصدار النهائي الشامل V15 ---
 const botToken = "8791910472:AAFV5-CMq0QuOnPGa8QR-UmxTGOWOjySrds";
 const adminId = 682572594; 
 const telegramUrl = "https://api.telegram.org/bot" + botToken;
@@ -21,90 +21,66 @@ function doGet(e) {
 
 function doPost(e) {
   var update;
-  try { update = JSON.parse(e.postData.contents); } catch(err) { return ContentService.createTextOutput("OK"); }
+  try {
+    update = JSON.parse(e.postData.contents);
+  } catch(err) {
+    return ContentService.createTextOutput("Error Parsing JSON");
+  }
   
-  // الحفظ اليدوي الكامل للبيانات
-  if (update.action === "add_manual") {
+  // 1. معالجة الإضافة اليدوية من البوت
+  if (update.action === "add_manual" || update.action === "add_from_vercel") {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
     var id = "APK" + Math.floor(Math.random() * 9000 + 1000);
     
-    // استخدام رابط الصورة للأيقونة والغلاف تلقائياً
-    var iconUrl = update.icon || "https://cdn-icons-png.flaticon.com/512/1152/1152912.png";
+    var name = update.name || "تطبيق جديد";
+    var icon = update.icon || update.image || "https://cdn-icons-png.flaticon.com/512/1152/1152912.png";
+    var desc = update.desc || update.description || "تحميل APK مجاني برابط مباشر.";
+    var link = update.link || update.previewUrl || "#";
     
     sheet.appendRow([
-      id, 
-      update.name || "تطبيق جديد", 
-      update.desc || "تحميل APK مجاني.", 
-      "apps", 
-      "بريميوم", 
-      "متوافق", 
-      iconUrl, 
-      iconUrl, // الغلاف هو نفسه الأيقونة تلقائياً
-      update.link || "#"
+      id,       // العمود A: ID
+      name,     // العمود B: Title
+      desc,     // العمود C: Description
+      "apps",   // العمود D: Category
+      "New",    // العمود E: Tag
+      "Safe",   // العمود F: Size/Status
+      icon,     // العمود G: Icon
+      icon,     // العمود H: Banner (نفس الأيقونة كما طلبت)
+      link      // العمود I: Link
     ]);
+    SpreadsheetApp.flush();
     return ContentService.createTextOutput("Success");
   } 
   
+  // 2. معالجة الحذف
   if (update.action === "delete_item") {
-    deleteItemById(update.id);
-    return ContentService.createTextOutput("Deleted");
-  }
-
-  var chatId = (update.message) ? update.message.chat.id : (update.callback_query) ? update.callback_query.message.chat.id : null;
-  if (!chatId || chatId != adminId) return ContentService.createTextOutput("OK");
-
-  if (update.callback_query) {
-    var data = update.callback_query.data;
-    if (data.startsWith("del_") && deleteItemById(data.replace("del_", ""))) sendMessage(chatId, "✅ تم الحذف.");
-    UrlFetchApp.fetch(telegramUrl + "/answerCallbackQuery?callback_query_id=" + update.callback_query.id);
-  } else if (update.message) {
-    var text = update.message.text || "";
-    if (text == "/start" || text == "🏠 القائمة الرئيسية") sendMainKeyboard(chatId);
-    else if (text == "➕ إضافة APK جديد") sendMessage(chatId, "أرسل اسم التطبيق للبدء...");
-    else if (text == "📋 عرض وحذف المحتوى") listContentForControl(chatId);
-    else sendMainKeyboard(chatId);
-  }
-  return ContentService.createTextOutput("OK");
-}
-
-function deleteItemById(id) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
-  var data = sheet.getDataRange().getValues();
-  for (var i = 1; i < data.length; i++) {
-    if (data[i][0].toString().trim() == id.toString().trim()) {
-      sheet.deleteRow(i + 1);
-      SpreadsheetApp.flush();
-      return true;
+    var idToDel = update.id;
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      if (data[i][0].toString().trim() == idToDel.toString().trim()) {
+        sheet.deleteRow(i + 1);
+        SpreadsheetApp.flush();
+        return ContentService.createTextOutput("Deleted");
+      }
     }
+    return ContentService.createTextOutput("Not Found");
   }
-  return false;
+
+  return ContentService.createTextOutput("OK");
 }
 
 function sendMainKeyboard(chatId) {
   var keyboard = {
-    keyboard: [[{ text: "➕ إضافة APK جديد" }], [{ text: "📋 عرض وحذف المحتوى" }, { text: "🌐 زيارة الموقع" }]],
+    keyboard: [[{ text: "➕ إضافة APK جديد" }], [{ text: "📋 إدارة المحتوى" }]],
     resize_keyboard: true
   };
-  sendKeyboard(chatId, "🤖 **لوحة تحكم دوما APK V10**", keyboard);
-}
-
-function listContentForControl(chatId) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
-  var data = sheet.getDataRange().getValues();
-  if (data.length <= 1) return sendMessage(chatId, "📭 فارغ.");
-  for (var i = 1; i < data.length; i++) {
-    var keyboard = { inline_keyboard: [[{ text: "🗑 حذف", callback_data: "del_" + data[i][0] }]] };
-    sendKeyboard(chatId, "📦 " + data[i][1], keyboard);
-  }
-}
-
-function sendKeyboard(chatId, text, keyboard) {
   UrlFetchApp.fetch(telegramUrl + "/sendMessage", {
     method: "post", contentType: "application/json",
-    payload: JSON.stringify({ chat_id: chatId, text: text, parse_mode: "Markdown", reply_markup: JSON.stringify(keyboard) })
+    payload: JSON.stringify({ chat_id: chatId, text: "🏠 لوحة التحكم:", reply_markup: JSON.stringify(keyboard) })
   });
 }
 
 function sendMessage(chatId, text) {
-  UrlFetchApp.fetch(telegramUrl + "/sendMessage?chat_id=" + chatId + "&text=" + encodeURIComponent(text) + "&parse_mode=Markdown");
+  UrlFetchApp.fetch(telegramUrl + "/sendMessage?chat_id=" + chatId + "&text=" + encodeURIComponent(text));
 }
