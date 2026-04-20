@@ -9,37 +9,24 @@ module.exports = async (req, res) => {
 
     const { message, callback_query } = req.body;
     
-    // التعامل مع ضغطات الأزرار (الحذف والتعديل)
     if (callback_query) {
         const chatId = callback_query.message.chat.id;
         const data = callback_query.data;
-        const messageId = callback_query.message.message_id;
-
         if (data.startsWith('del_')) {
             const appId = data.replace('del_', '');
-            await sendMessage(chatId, "⏳ جاري الحذف من قاعدة البيانات...");
+            await sendMessage(chatId, "⏳ جاري الحذف وتحديث القائمة...");
             try {
                 await axios.post("https://script.google.com/macros/s/AKfycbxgr2lfK9pdy4ChWEZIey5yahTsnd9zjh1XRoffPBhQzZnLI4o-jkuQGRhiKellMg4/exec", {
                     action: "delete_item",
                     id: appId
                 });
-                await sendMessage(chatId, "✅ تم الحذف بنجاح!");
-                // انتظار ثانية واحدة لضمان تحديث بيانات جوجل
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                await sendMessage(chatId, "✅ تم الحذف وتحديث الأزرار!");
+                // جلب القائمة الجديدة فوراً
                 await sendManageKeyboard(chatId);
-            } catch (e) {
-                await sendMessage(chatId, "❌ فشل الحذف.");
-            }
-        }
-        else if (data.startsWith('editlink_')) {
-// ... (سيتم إكمال الوظيفة في استبدال شامل لاحقاً أو التأكد من وجودها)
-            const appId = data.replace('editlink_', '');
-            await sendMessage(chatId, `🔗 **أرسل الرابط الجديد الآن لـ (#${appId}):**\n*(يرجى الرد على هذه الرسالة)*`, { 
-                reply_markup: { force_reply: true, selective: true } 
-            });
+            } catch (e) { await sendMessage(chatId, "❌ فشل التحديث."); }
         }
         else if (data === 'cancel') {
-            await sendMessage(chatId, "🏠 تم الإلغاء والعودة للقائمة الرئيسية.");
+            await sendMessage(chatId, "🏠 تم الإلغاء.");
             await sendMainKeyboard(chatId);
         }
         return res.status(200).send('OK');
@@ -49,161 +36,92 @@ module.exports = async (req, res) => {
     const chatId = message.chat.id;
     const text = message.text || "";
 
-    // حماية الأدمن
-    if (chatId.toString() !== adminId.toString()) {
-        return res.status(200).send('Unauthorized');
-    }
+    if (chatId.toString() !== adminId.toString()) return res.status(200).send('Unauthorized');
 
-    // 1. معالجة الردود أولاً (الخطوات التفاعلية)
     if (message.reply_to_message) {
         const replyText = message.reply_to_message.text;
 
+        // الخطوة 1 -> 2: اسم -> صورة
         if (replyText.includes("أرسل اسم التطبيق الآن")) {
-            await sendMessage(chatId, `🚀 ممتاز، الاسم هو: *${text}*\n\n🔗 **الخطوة 2:** أرسل رابط التحميل الآن لـ ${text}:`, { reply_markup: { force_reply: true, selective: true } });
+            await sendMessage(chatId, `🖼 **الخطوة 2:** أرسل رابط صورة التطبيق لـ:\n\n*${text}*`, { 
+                reply_markup: { force_reply: true, selective: true } 
+            });
         }
-        else if (replyText.includes("أرسل رابط التحميل الآن لـ")) {
-            const appName = replyText.split("لـ ")[1].split(":")[0];
-            const appLink = text;
-            await sendMessage(chatId, `⏳ جاري معالجة الرفع لـ ${appName}...`);
+        // الخطوة 2 -> 3: صورة -> وصف
+        else if (replyText.includes("أرسل رابط صورة التطبيق لـ")) {
+            const name = replyText.split("\n\n*")[1].replace(/\*/g, "");
+            const icon = text;
+            await sendMessage(chatId, `📝 **الخطوة 3:** أرسل وصفاً للتطبيق:\n\n*اسم:* ${name}\n*صورة:* ${icon}`, { 
+                reply_markup: { force_reply: true, selective: true } 
+            });
+        }
+        // الخطوة 3 -> 4: وصف -> رابط تحميل
+        else if (replyText.includes("أرسل وصفاً للتطبيق")) {
+            const lines = replyText.split("\n");
+            const name = lines[2].replace("*اسم:* ", "");
+            const icon = lines[3].replace("*صورة:* ", "");
+            const desc = text;
+            await sendMessage(chatId, `🔗 **الخطوة الأخيرة:** أرسل رابط التحميل لـ:\n\n*الاسم:* ${name}\n*الصورة:* ${icon}\n*الوصف:* ${desc}`, { 
+                reply_markup: { force_reply: true, selective: true } 
+            });
+        }
+        // الخطوة 4: الحفظ النهائي
+        else if (replyText.includes("أرسل رابط التحميل لـ")) {
+            const lines = replyText.split("\n");
+            const name = lines[2].replace("*الاسم:* ", "");
+            const icon = lines[3].replace("*الصورة:* ", "");
+            const desc = lines[4].replace("*الوصف:* ", "");
+            const link = text;
+            
+            await sendMessage(chatId, "⏳ جاري الرفع والمزامنة...");
             try {
                 await axios.post("https://script.google.com/macros/s/AKfycbxgr2lfK9pdy4ChWEZIey5yahTsnd9zjh1XRoffPBhQzZnLI4o-jkuQGRhiKellMg4/exec", {
-                    action: "add_from_vercel",
-                    name: appName,
-                    link: appLink
+                    action: "add_manual",
+                    name: name,
+                    icon: icon,
+                    desc: desc,
+                    link: link
                 });
-                await sendMessage(chatId, "✅ **تمت الإضافة بنجاح!**");
-            } catch (err) {
-                await sendMessage(chatId, "❌ حدث خطأ أثناء الحفظ.");
-            }
-            await sendMainKeyboard(chatId);
-        }
-        else if (replyText.includes("أرسل الرابط الجديد الآن لـ")) {
-            const appId = replyText.match(/\(#([^)]+)\)/)[1];
-            const newLink = text;
-            await sendMessage(chatId, `⏳ جاري تحديث الرابط لـ #${appId}...`);
-            try {
-                await axios.post("https://script.google.com/macros/s/AKfycbxgr2lfK9pdy4ChWEZIey5yahTsnd9zjh1XRoffPBhQzZnLI4o-jkuQGRhiKellMg4/exec", {
-                    action: "update_link",
-                    id: appId,
-                    link: newLink
-                });
-                await sendMessage(chatId, "✅ **تم تحديث الرابط بنجاح!**");
-            } catch (err) {
-                await sendMessage(chatId, "❌ فشل التحديث.");
-            }
+                await sendMessage(chatId, "✅ **تمت الإضافة بنجاح!**\n(تم استخدام الصورة كأيقونة وكفر تلقائياً)");
+            } catch (err) { await sendMessage(chatId, "❌ فشل الحفظ."); }
             await sendMainKeyboard(chatId);
         }
         return res.status(200).send('OK');
     }
 
-    // 2. معالجة الأوامر الرئيسية
-    if (text === '/start' || text === '🏠 القائمة الرئيسية') {
-        await sendMainKeyboard(chatId);
-    }
-    else if (text.startsWith('/add')) {
-        const parts = text.split(" ");
-        if (parts.length < 3) {
-            await sendMessage(chatId, "⚠️ الطريقة الصحيحة:\n`/add الاسم رابط_التحميل`\n\nمثال:\n`/add Subway Surfers https://example.com/apk` ");
-            return res.status(200).send('OK');
-        }
-        
-        const appName = parts.slice(1, parts.length - 1).join(" ");
-        const appLink = parts[parts.length - 1];
-
-        await sendMessage(chatId, `⏳ جاري معالجة الرفع لـ ${appName}...`);
-
-        try {
-            await axios.post("https://script.google.com/macros/s/AKfycbxgr2lfK9pdy4ChWEZIey5yahTsnd9zjh1XRoffPBhQzZnLI4o-jkuQGRhiKellMg4/exec", {
-                action: "add_from_vercel",
-                name: appName,
-                link: appLink
-            });
-            await sendMessage(chatId, "✅ **تمت الإضافة بنجاح!** الموقع سيظهر فيه التطبيق الآن.");
-        } catch (err) {
-            await sendMessage(chatId, "❌ حدث خطأ أثناء الحفظ.");
-        }
-        await sendMainKeyboard(chatId);
-    }
-    else if (text === '📋 عرض المحتوى الحالي' || text === '📋 إدارة المحتوى') {
-        await sendManageKeyboard(chatId);
-    }
-    else if (text.startsWith('⚙️ إدارة:')) {
-        const idMatch = text.match(/\(#([^)]+)\)/);
-        const appTitle = text.split('⚙️ إدارة: ')[1].split(' (#')[0];
-        const appId = idMatch[1];
-
-        const inlineKeyboard = {
-            inline_keyboard: [
-                [
-                    { text: "🗑 حذف نهائي", callback_data: `del_${appId}` },
-                    { text: "✏️ تعديل الرابط", callback_data: `editlink_${appId}` }
-                ],
-                [{ text: "❌ إلغاء", callback_data: "cancel" }]
-            ]
-        };
-
-        await sendMessage(chatId, `🛠 **ماذا تريد أن تفعل بـ ${appTitle}؟**`, { reply_markup: inlineKeyboard });
-    }
-    // ... باقي معالجة الحذف في callback_query تم تحديثها بالأعلى لتشمل التعديل أيضاً
+    if (text === '/start' || text === '🏠 القائمة الرئيسية') await sendMainKeyboard(chatId);
     else if (text === '➕ إضافة APK جديد') {
         await sendMessage(chatId, "📝 **الخطوة 1:** أرسل اسم التطبيق الآن:", { reply_markup: { force_reply: true, selective: true } });
     }
-    else if (text === '🌐 زيارة المتجر') {
-        await sendMessage(chatId, "🔗 يمكنك زيارة متجرك من هذا الرابط:\n\nhttps://domaapk.vercel.app/");
-    }
-    else {
-        await sendMainKeyboard(chatId);
-    }
+    else if (text === '📋 إدارة المحتوى') await sendManageKeyboard(chatId);
+    else await sendMainKeyboard(chatId);
 
     res.status(200).send('OK');
 };
 
 async function sendMainKeyboard(chatId) {
     const keyboard = {
-        keyboard: [
-            [{ text: "➕ إضافة APK جديد" }],
-            [{ text: "📋 عرض المحتوى الحالي" }, { text: "🌐 زيارة المتجر" }],
-            [{ text: "🏠 القائمة الرئيسية" }]
-        ],
-        resize_keyboard: true,
-        persistent: true
+        keyboard: [[{ text: "➕ إضافة APK جديد" }], [{ text: "📋 إدارة المحتوى" }, { text: "🌐 زيارة المتجر" }]],
+        resize_keyboard: true
     };
-    await sendMessage(chatId, "🎮 **تحكم بمتجرك بسهولة عبر الأزرار أدناه:**", { reply_markup: keyboard });
+    await sendMessage(chatId, "🎮 **دوما APK - لوحة التحكم:**", { reply_markup: keyboard });
 }
 
 async function sendManageKeyboard(chatId) {
     try {
-        const GAS_URL = `https://script.google.com/macros/s/AKfycbxgr2lfK9pdy4ChWEZIey5yahTsnd9zjh1XRoffPBhQzZnLI4o-jkuQGRhiKellMg4/exec?t=${Date.now()}`;
-        const response = await axios.get(GAS_URL);
+        const timestamp = Date.now();
+        const response = await axios.get(`https://script.google.com/macros/s/AKfycbxgr2lfK9pdy4ChWEZIey5yahTsnd9zjh1XRoffPBhQzZnLI4o-jkuQGRhiKellMg4/exec?t=${timestamp}`);
         const apps = response.data;
-
-        if (apps.length === 0) {
-            await sendMessage(chatId, "📭 لا يوجد محتوى حالياً.");
-        } else {
-            const keyboard = {
-                keyboard: apps.map(app => [{ text: `⚙️ إدارة: ${app.title} (#${app.id})` }]),
-                resize_keyboard: true,
-                one_time_keyboard: false,
-                is_persistent: true
-            };
-            keyboard.keyboard.push([{ text: "🏠 القائمة الرئيسية" }]);
-            await sendMessage(chatId, "👇 **اختر التطبيق الذي تريد تعديله أو حذفه:**", { reply_markup: keyboard });
-        }
-    } catch (err) {
-        await sendMessage(chatId, "❌ حدث خطأ أثناء جلب قائمة التطبيقات.");
-    }
+        if (apps.length === 0) return await sendMessage(chatId, "📭 فارغ.");
+        const keyboard = {
+            keyboard: apps.slice(0, 10).map(app => [{ text: `⚙️ إدارة: ${app.title} (#${app.id})` }]),
+            resize_keyboard: true
+        };
+        keyboard.keyboard.push([{ text: "🏠 القائمة الرئيسية" }]);
+        await sendMessage(chatId, "👇 اختر التطبيق لإدارته:", { reply_markup: keyboard });
+    } catch (e) { await sendMessage(chatId, "❌ خطأ في جلب البيانات."); }
 }
 
-async function sendMessage(chatId, text, extraParams = {}) {
-    const payload = {
-        chat_id: chatId,
-        text: text,
-        parse_mode: 'Markdown',
-        ...extraParams
-    };
-    try {
-        await axios.post(`${telegramUrl}/sendMessage`, payload);
-    } catch (e) {
-        console.error("Telegram API Error:", e.response ? e.response.data : e.message);
-    }
+async function sendMessage(chatId, text, extra = {}) {
+    try { await axios.post(`${telegramUrl}/sendMessage`, { chat_id: chatId, text, parse_mode: 'Markdown', ...extra }); } catch(e) {}
 }

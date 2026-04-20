@@ -170,7 +170,12 @@ window.prepareDownload = function(appId) {
         </div>
     `;
 
-    downloadModal.style.display = "block";
+    downloadModal.style.display = "flex";
+    
+    // حقن إعلان المودال إذا كان موجوداً
+    if (typeof ADS_CONFIG !== 'undefined' && document.getElementById('ad-modal')) {
+        document.getElementById('ad-modal').innerHTML = ADS_CONFIG.modalAd;
+    }
 
     // تفعيل مؤقت بسيط لإعطاء انطباع بالاحترافية والفحص
     let seconds = 7;

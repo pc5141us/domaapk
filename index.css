@@ -698,3 +698,25 @@ body {
     .modal-title-group h2 { font-size: 1.8rem; }
     .confirmation-content { padding: 2rem 1rem; }
 }
+
+/* --- Ads Styles --- */
+.ad-container {
+    width: 100%;
+    margin: 25px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    min-height: 50px;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.ad-container-modal {
+    width: 100%;
+    margin: 15px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+}

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="index.css">
+    <script src="ads.js" defer></script>
 </head>
 <body>
     <div class="glow-overlay"></div>
@@ -48,6 +49,8 @@
                     <span class="stat-label">آمن</span>
                 </div>
             </div>
+            <!-- Header Ad -->
+            <div id="ad-header" class="ad-container"></div>
         </div>
     </header>
 
@@ -61,11 +64,17 @@
             </div>
         </section>
 
+        <!-- Mid Content Ad -->
+        <div id="ad-mid" class="ad-container"></div>
+
         <section class="app-grid" id="appGrid">
             <!-- Apps will be injected here -->
             <div class="loader"></div>
         </section>
     </main>
+
+    <!-- Footer Ad -->
+    <div id="ad-footer" class="ad-container" style="margin-bottom: 20px;"></div>
 
     <footer class="footer">
         <div class="container footer-content">
@@ -113,6 +122,8 @@
             <div id="downloadInfo">
                 <!-- Content will be injected by JS -->
             </div>
+            <!-- Modal Ad Position -->
+            <div id="ad-modal" class="ad-container-modal"></div>
         </div>
     </div>
 
