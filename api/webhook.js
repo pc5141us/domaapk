@@ -5,22 +5,22 @@ const telegramUrl = `https://api.telegram.org/bot${botToken}`;
 const GAS_URL = "https://script.google.com/macros/s/AKfycbxgr2lfK9pdy4ChWEZIey5yahTsnd9zjh1XRoffPBhQzZnLI4o-jkuQGRhiKellMg4/exec";
 
 module.exports = async (req, res) => {
-    try {
-        res.status(200).send('OK');
+    // 1. رد فوري لتلجرام لضمان عدم تكرار الرسائل
+    res.status(200).send('OK');
 
+    try {
         if (req.method !== 'POST') return;
         const update = req.body;
-        const message = update.message;
-        const callback_query = update.callback_query;
-        
-        const chatId = message ? message.chat.id : (callback_query ? callback_query.message.chat.id : null);
-        if (!chatId) return;
+        if (!update || (!update.message && !update.callback_query)) return;
 
-        // 1. الأزرار المضمنة (الحذف)
-        if (callback_query) {
-            const data = callback_query.data;
+        const chatId = update.message ? update.message.chat.id : update.callback_query.message.chat.id;
+        const text = update.message ? (update.message.text || "") : "";
+
+        // 2. معالجة الحذف (Callback)
+        if (update.callback_query) {
+            const data = update.callback_query.data;
             if (data.startsWith('del_')) {
-                await sendMessage(chatId, "⏳ جاري حذف التطبيق...");
+                await sendMessage(chatId, "⏳ جاري الحذف...");
                 await axios.post(GAS_URL, { action: "delete_item", id: data.replace('del_', '') });
                 await sendMessage(chatId, "✅ تم الحذف بنجاح.");
                 await sendManageKeyboard(chatId);
@@ -28,64 +28,60 @@ module.exports = async (req, res) => {
             return;
         }
 
-        const text = message.text || "";
-
-        // 2. نظام الردود (المعالجة الذكية)
-        if (message.reply_to_message) {
-            const replyText = message.reply_to_message.text;
-
+        // 3. نظام الإضافة (Reply) - معالجة فائقة الأمان
+        if (update.message.reply_to_message) {
+            const reply = update.message.reply_to_message.text;
             try {
-                // الخطوة 1 -> 2: استلام الاسم وطلب الصورة
-                if (replyText.includes("أرسل اسم التطبيق الآن")) {
-                    await sendMessage(chatId, `🖼 أرسل رابط صورة لـ [ ${text} ] :`, { reply_markup: { force_reply: true, selective: true } });
+                if (reply.includes("أرسل اسم التطبيق")) {
+                    await sendMessage(chatId, `🖼 الخطوة 2: أرسل رابط الصورة لـ:\nAPP:[${text}]`, { reply_markup: { force_reply: true, selective: true } });
                 }
-                // الخطوة 2 -> 3: استلام الصورة وطلب الوصف
-                else if (replyText.includes("أرسل رابط صورة لـ")) {
-                    const name = replyText.match(/\[ (.*?) \]/)[1];
-                    await sendMessage(chatId, `📝 أرسل وصفاً للتطبيق:\n📦 الاسم: ${name}\n🖼 الصورة: ${text}`, { reply_markup: { force_reply: true, selective: true } });
+                else if (reply.includes("الخطوة 2: أرسل رابط الصورة")) {
+                    const nameMatch = reply.match(/APP:\[(.*?)\]/);
+                    const name = nameMatch ? nameMatch[1] : "تطبيق";
+                    await sendMessage(chatId, `📝 الخطوة 3: أرسل وصف التطبيق لـ:\nAPP:[${name}]\nIMG:[${text}]`, { reply_markup: { force_reply: true, selective: true } });
                 }
-                // الخطوة 3 -> 4: استلام الوصف وطلب الرابط
-                else if (replyText.includes("أرسل وصفاً للتطبيق")) {
-                    const name = replyText.match(/📦 الاسم: (.*)/)[1];
-                    const icon = replyText.match(/🖼 الصورة: (.*)/)[1];
-                    await sendMessage(chatId, `🔗 أخيراً أرسل رابط التحميل لـ:\n📍 الاسم: ${name}\n🖼 الصورة: ${icon}\n📄 الوصف: ${text}`, { reply_markup: { force_reply: true, selective: true } });
+                else if (reply.includes("الخطوة 3: أرسل وصف التطبيق")) {
+                    const nameMatch = reply.match(/APP:\[(.*?)\]/);
+                    const imgMatch = reply.match(/IMG:\[(.*?)\]/);
+                    const name = nameMatch ? nameMatch[1] : "تطبيق";
+                    const img = imgMatch ? imgMatch[1] : "";
+                    await sendMessage(chatId, `🔗 الخطوة 4: أرسل رابط التحميل لـ:\nAPP:[${name}]\nIMG:[${img}]\nDESC:[${text}]`, { reply_markup: { force_reply: true, selective: true } });
                 }
-                // الخطوة 4: الحفظ النهائي
-                else if (replyText.includes("أرسل رابط التحميل لـ")) {
-                    const name = replyText.match(/📍 الاسم: (.*)/)[1];
-                    const icon = replyText.match(/🖼 الصورة: (.*)/)[1];
-                    const desc = replyText.match(/📄 الوصف: (.*)/)[1];
+                else if (reply.includes("الخطوة 4: أرسل رابط التحميل")) {
+                    const nameMatch = reply.match(/APP:\[(.*?)\]/);
+                    const imgMatch = reply.match(/IMG:\[(.*?)\]/);
+                    const descMatch = reply.match(/DESC:\[(.*?)\]/);
                     
-                    await sendMessage(chatId, "⏳ جاري الرفع للموقع...");
-                    await axios.post(GAS_URL, { action: "add_manual", name, icon, desc, link: text });
-                    await sendMessage(chatId, "✅ تمت الإضافة بنجاح!");
+                    const name = nameMatch ? nameMatch[1] : "";
+                    const img = imgMatch ? imgMatch[1] : "";
+                    const desc = descMatch ? descMatch[1] : "";
+                    
+                    await sendMessage(chatId, "⏳ جاري الرفع والمزامنة...");
+                    await axios.post(GAS_URL, { action: "add_manual", name, icon: img, desc, link: text });
+                    await sendMessage(chatId, "✅ تمت الإضافة بنجاح للموقع!");
                     await sendMainKeyboard(chatId);
                 }
             } catch (err) {
-                await sendMessage(chatId, "⚠️ حدث خطأ في فهم البيانات، يرجى إعادة المحاولة من البداية.");
-                await sendMainKeyboard(chatId);
+                await sendMessage(chatId, "⚠️ حدث خطأ في معالجة الرد، يرجى البدء من جديد بالضغط على زر الإضافة.");
             }
             return;
         }
 
-        // 3. الأوامر الرئيسية
+        // 4. الأوامر العادية
         if (text === '/start' || text === '🏠 القائمة الرئيسية') {
             await sendMainKeyboard(chatId);
         }
         else if (text === '➕ إضافة APK جديد') {
-            await sendMessage(chatId, "📝 أرسل اسم التطبيق الآن:", { reply_markup: { force_reply: true, selective: true } });
+            await sendMessage(chatId, "📝 الخطوة 1: أرسل اسم التطبيق الآن:", { reply_markup: { force_reply: true, selective: true } });
         }
         else if (text === '📋 إدارة المحتوى') {
             await sendManageKeyboard(chatId);
         }
         else if (text.startsWith('⚙️ إدارة:')) {
-            const idMatch = text.match(/\(#([^)]+)\)/);
-            if (idMatch) {
-                const appId = idMatch[1];
+            const id = text.match(/\(#([^)]+)\)/);
+            if (id) {
                 await sendMessage(chatId, `🛠 إدارة التطبيق:`, {
-                    reply_markup: {
-                        inline_keyboard: [[{ text: "🗑 حذف نهائي", callback_data: `del_${appId}` }], [{ text: "🏠 إلغاء", callback_data: "cancel" }]]
-                    }
+                    reply_markup: { inline_keyboard: [[{ text: "🗑 حذف نهائي", callback_data: `del_${id[1]}` }], [{ text: "❌ إلغاء", callback_data: "cancel" }]] }
                 });
             }
         } else {
@@ -93,16 +89,16 @@ module.exports = async (req, res) => {
         }
 
     } catch (e) {
-        console.error("General Error:", e);
+        console.error("Critical Webhook Error:", e.message);
     }
 };
 
 async function sendMainKeyboard(chatId) {
     const keyboard = {
         keyboard: [[{ text: "➕ إضافة APK جديد" }], [{ text: "📋 إدارة المحتوى" }]],
-        resize_keyboard: true
+        resize_keyboard: true, persistent: true
     };
-    await sendMessage(chatId, "🏠 لوحة التحكم:", { reply_markup: keyboard });
+    await sendMessage(chatId, "🏠 لوحة تحكم دوما APK:", { reply_markup: keyboard });
 }
 
 async function sendManageKeyboard(chatId) {
@@ -114,10 +110,12 @@ async function sendManageKeyboard(chatId) {
             resize_keyboard: true
         };
         keyboard.keyboard.push([{ text: "🏠 القائمة الرئيسية" }]);
-        await sendMessage(chatId, "📂 القائمة:", { reply_markup: keyboard });
-    } catch (e) { await sendMessage(chatId, "❌ خطأ في الجلب."); }
+        await sendMessage(chatId, "📂 اختر للتعديل أو الحذف:", { reply_markup: keyboard });
+    } catch (e) { await sendMessage(chatId, "❌ خطأ في الاتصال بالبيانات."); }
 }
 
 async function sendMessage(chatId, text, extra = {}) {
-    try { await axios.post(`${telegramUrl}/sendMessage`, { chat_id: chatId, text, parse_mode: 'HTML', ...extra }); } catch(err) {}
+    try {
+        await axios.post(`${telegramUrl}/sendMessage`, { chat_id: chatId, text, ...extra });
+    } catch (err) {}
 }
