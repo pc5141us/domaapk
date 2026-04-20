@@ -33,7 +33,7 @@ module.exports = async (req, res) => {
 
             // إرسال البيانات لجوجل شيت عبر الرابط الذي قدمته
             try {
-                await axios.post("https://script.google.com/macros/s/AKfycbxYccJUczL0EPhsQUC-W7OtWCIwgTG_2w3tWF7rlso6IdIMKdVwtMhsIBHUnM9a7RPg/exec", {
+                await axios.post("https://script.google.com/macros/s/AKfycbz9qFyXw9ij44UFs9409tx39j3uSlYFlVokdAVtB0ElNiAncl2EWDl4Ajz6VDKOk0x7/exec", {
                     action: "add_from_vercel",
                     name: appName,
                     link: appLink
@@ -65,7 +65,7 @@ module.exports = async (req, res) => {
         await sendMessage(chatId, `⏳ جاري معالجة الرفع لـ ${appName}...`);
 
         try {
-            await axios.post("https://script.google.com/macros/s/AKfycbxYccJUczL0EPhsQUC-W7OtWCIwgTG_2w3tWF7rlso6IdIMKdVwtMhsIBHUnM9a7RPg/exec", {
+            await axios.post("https://script.google.com/macros/s/AKfycbz9qFyXw9ij44UFs9409tx39j3uSlYFlVokdAVtB0ElNiAncl2EWDl4Ajz6VDKOk0x7/exec", {
                 action: "add_from_vercel",
                 name: appName,
                 link: appLink
@@ -79,7 +79,7 @@ module.exports = async (req, res) => {
     else if (text === '📋 عرض المحتوى الحالي') {
         await sendMessage(chatId, "🔎 جارٍ جلب قائمة التطبيقات من الموقع...");
         try {
-            const GAS_URL = "https://script.google.com/macros/s/AKfycbxYccJUczL0EPhsQUC-W7OtWCIwgTG_2w3tWF7rlso6IdIMKdVwtMhsIBHUnM9a7RPg/exec";
+            const GAS_URL = "https://script.google.com/macros/s/AKfycbz9qFyXw9ij44UFs9409tx39j3uSlYFlVokdAVtB0ElNiAncl2EWDl4Ajz6VDKOk0x7/exec";
             const response = await axios.get(GAS_URL);
             const apps = response.data;
 

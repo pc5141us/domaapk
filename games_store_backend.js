@@ -24,17 +24,16 @@ function doGet(e) {
 function doPost(e) {
   var update = JSON.parse(e.postData.contents);
   
-  // التعامل مع الطلبات المباشرة من Vercel (ليس من تليجرام)
+  // التعامل مع الطلبات المباشرة من Vercel
   if (update.action === "add_from_vercel") {
     var smart = getSmartData(update.name);
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     var id = "APK" + Math.floor(Math.random() * 10000);
-    sheet.appendRow([id, update.name, smart.desc, smart.category, smart.tag, "أندرويد", smart.icon, "https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb", update.link]);
+    sheet.appendRow([id, update.name, smart.desc, smart.category, smart.tag, "أندرويد متوافق", smart.icon, smart.banner, update.link]);
     return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
   }
 
   var chatId = (update.message) ? update.message.chat.id : (update.callback_query) ? update.callback_query.message.chat.id : null;
-  
   if (!chatId) return;
 
   if (chatId != adminId) {
@@ -63,6 +62,68 @@ function doPost(e) {
   }
 }
 
+// محرك البحث والربط مع متجر Google Play المحسن
+function getSmartData(name) {
+  var res = { 
+    category: "apps", 
+    tag: "utility", 
+    icon: "https://cdn-icons-png.flaticon.com/512/1152/1152912.png", 
+    banner: "https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb",
+    desc: "تحميل " + name + " APK للأندرويد بأحدث إصدار." 
+  };
+  
+  var options = {
+    "muteHttpExceptions": true,
+    "headers": {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+  };
+
+  try {
+    var searchUrl = "https://play.google.com/store/search?q=" + encodeURIComponent(name) + "&c=apps&hl=ar";
+    var response = UrlFetchApp.fetch(searchUrl, options);
+    var html = response.getContentText();
+    var idMatch = html.match(/\/store\/apps\/details\?id=([a-zA-Z0-9._]+)/);
+    
+    if (idMatch && idMatch[1]) {
+      var appId = idMatch[1];
+      var appUrl = "https://play.google.com/store/apps/details?id=" + appId + "&hl=ar";
+      var appResponse = UrlFetchApp.fetch(appUrl, options);
+      var appHtml = appResponse.getContentText();
+      
+      var iconMatch = appHtml.match(/meta property="og:image" content="([^"]+)"/);
+      if (iconMatch) res.icon = iconMatch[1].replace(/=s[0-9]+.*/, "=s512");
+
+      var featureMatch = appHtml.match(/https:\/\/play-lh.googleusercontent.com\/([^"= ]+)=w[0-9]+-h[0-9]+/);
+      if (featureMatch) res.banner = featureMatch[0].replace(/=w[0-9]+-h[0-9]+.*/, "=w1200");
+      else if (iconMatch) res.banner = iconMatch[1].replace(/=s[0-9]+.*/, "=w1200-h630-p");
+
+      var descMatch = appHtml.match(/meta name="description" content="([^"]+)"/);
+      if (descMatch) res.desc = descMatch[1].substring(0, 150) + "...";
+      
+      if (appHtml.toLowerCase().includes("game") || appHtml.includes("لعبة")) {
+        res.category = "games";
+      }
+    }
+  } catch(e) { }
+
+  return res;
+}
+
+function processSmartAdd(chatId, text) {
+  var parts = text.split(" ");
+  if (parts.length < 3) return;
+  var name = parts.slice(1, parts.length - 1).join(" ");
+  var link = parts[parts.length - 1];
+  
+  sendMessage(chatId, "🚀 جاري الاتصال بمتجر Play لجلب البيانات الأصلية لـ *" + name + "*...");
+  var smart = getSmartData(name);
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var id = "APK" + Math.floor(Math.random() * 10000);
+  sheet.appendRow([id, name, smart.desc, smart.category, "أكشن", "أندرويد متوافق", smart.icon, smart.banner, link]);
+  sendMessage(chatId, "✅ **تم جلب البيانات الأصلية!**\n\n🖼 يمكنك الآن التحقق من الموقع لرؤية الأيقونة والبناير.");
+}
+
 // القائمة الرئيسية (أزرار الكيبورد)
 function sendMainKeyboard(chatId) {
   var keyboard = {
@@ -76,7 +137,6 @@ function sendMainKeyboard(chatId) {
   sendKeyboard(chatId, "🤖 **لوحة تحكم متجر دوما APK**\nأهلاً بك! اختر ما تريد القيام به من القائمة أدناه:", keyboard);
 }
 
-// عرض المحتوى مع أزرار الحذف
 function listContentForControl(chatId) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   var data = sheet.getDataRange().getValues();
@@ -84,7 +144,6 @@ function listContentForControl(chatId) {
     sendMessage(chatId, "📭 لا يوجد محتوى حالياً.");
     return;
   }
-  sendMessage(chatId, "🔎 إليك القائمة الحالية، يمكنك الحذف بضغطة زر:");
   for (var i = 1; i < data.length; i++) {
     var id = data[i][0];
     var title = data[i][1];
@@ -95,7 +154,6 @@ function listContentForControl(chatId) {
   }
 }
 
-// معالجة الحذف
 function handleCallback(query) {
   var chatId = query.message.chat.id;
   var data = query.data;
@@ -116,87 +174,8 @@ function deleteItem(chatId, id) {
       return;
     }
   }
-  sendMessage(chatId, "❌ لم يتم العثور على العنصر.");
 }
 
-// محرك البحث والربط مع متجر Google Play
-function getSmartData(name) {
-  var res = { 
-    category: "apps", 
-    tag: "utility", 
-    icon: "https://cdn-icons-png.flaticon.com/512/1152/1152912.png", 
-    banner: "https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb",
-    desc: "تحميل " + name + " APK للأندرويد بأحدث إصدار." 
-  };
-  
-  try {
-    // 1. البحث عن التطبيق في جوجل بلاي
-    var searchUrl = "https://play.google.com/store/search?q=" + encodeURIComponent(name) + "&c=apps";
-    var response = UrlFetchApp.fetch(searchUrl, {muteHttpExceptions: true});
-    var html = response.getContentText();
-    
-    // 2. استخراج معرف التطبيق (Package ID) لأول نتيجة
-    var idMatch = html.match(/\/store\/apps\/details\?id=([a-zA-Z0-9._]+)/);
-    if (idMatch && idMatch[1]) {
-      var appId = idMatch[1];
-      var appUrl = "https://play.google.com/store/apps/details?id=" + appId + "&hl=ar";
-      var appResponse = UrlFetchApp.fetch(appUrl);
-      var appHtml = appResponse.getContentText();
-      
-      // 3. استخراج الأيقونة
-      var iconMatch = appHtml.match(/<img[^>]+src="([^"]+)"[^>]+alt="Logo image"/i) || 
-                      appHtml.match(/<img[^>]+alt="Logo image"[^>]+src="([^"]+)"/i) ||
-                      appHtml.match(/src="([^"]+)"[^>]+class="T7X9Cc"/);
-      if (iconMatch) res.icon = iconMatch[1].replace(/=s[0-9]+.*/, "=s512"); // جودة عالية
-
-      // 4. استخراج صورة الغلاف (Banner)
-      var bannerMatch = appHtml.match(/<img[^>]+src="([^"]+)"[^>]+alt="Feature graphic"/i) ||
-                        appHtml.match(/<img[^>]+src="([^"]+)"[^>]+alt="Screenshot image"/i);
-      if (bannerMatch) res.banner = bannerMatch[1].replace(/=[whs][0-9]+.*/, "=w1200");
-
-      // 5. استخراج الوصف المختصر
-      var descMatch = appHtml.match(/meta name="description" content="([^"]+)"/);
-      if (descMatch) res.desc = descMatch[1].substring(0, 150) + "...";
-      
-      // 6. تحديد التصنيف ذكياً (إذا وجدنا كلمة Game في المحتوى)
-      if (appHtml.toLowerCase().includes("game") || appHtml.includes("لعبة")) {
-        res.category = "games";
-      }
-    }
-
-    // تصنيف إضافي بناءً على الاسم لزيادة الدقة
-    var n = name.toLowerCase();
-    var tags = { "action": ["pubg", "war", "battle"], "social": ["facebook", "whatsapp", "social"], "sports": ["fifa", "pes", "football"] };
-    for (var tag in tags) {
-      if (tags[tag].some(k => n.includes(k))) { res.tag = tag; break; }
-    }
-
-  } catch(e) {
-    // في حال الخطأ نستخدم البيانات التبؤية البسيطة
-  }
-
-  return res;
-}
-
-function processSmartAdd(chatId, text) {
-  var parts = text.split(" ");
-  if (parts.length < 3) return;
-  var name = parts.slice(1, parts.length - 1).join(" ");
-  var link = parts[parts.length - 1];
-  
-  sendMessage(chatId, "🔎 جاري فحص متجر Play وتجهيز الأيقونات لـ *" + name + "*...");
-  
-  var smart = getSmartData(name);
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var id = "APK" + Math.floor(Math.random() * 10000);
-  
-  // حفظ البيانات الحقيقية
-  sheet.appendRow([id, name, smart.desc, smart.category, smart.tag, "أندرويد", smart.icon, smart.banner, link]);
-  
-  sendMessage(chatId, "✅ **تم الرفع بنجاح من المتجر!**\n\n🖼 تم جلب الأيقونة والغلاف الأصلي بنجاح.");
-}
-
-// وظائف مساعدة
 function sendKeyboard(chatId, text, keyboard) {
   UrlFetchApp.fetch(telegramUrl + "/sendMessage", {
     method: "post", contentType: "application/json",
@@ -206,9 +185,4 @@ function sendKeyboard(chatId, text, keyboard) {
 
 function sendMessage(chatId, text) {
   UrlFetchApp.fetch(telegramUrl + "/sendMessage?chat_id=" + chatId + "&text=" + encodeURIComponent(text) + "&parse_mode=Markdown");
-}
-
-function setWebhook() {
-  var url = "رابط_الـ_Web_App_من_جوجل_هنا";
-  UrlFetchApp.fetch(telegramUrl + "/setWebhook?url=" + url);
 }
