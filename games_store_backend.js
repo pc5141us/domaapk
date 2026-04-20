@@ -25,14 +25,16 @@ function doPost(e) {
   var update = JSON.parse(e.postData.contents);
   var chatId = (update.message) ? update.message.chat.id : (update.callback_query) ? update.callback_query.message.chat.id : null;
   
+  if (!chatId) return;
+
   if (chatId != adminId) {
     sendMessage(chatId, "⚠️ عذراً، هذا البوت خاص بالأدمن فقط.");
     return;
   }
   
   if (update.callback_query) {
-  if (update.message) {
-    var chatId = update.message.chat.id;
+    handleCallback(update.callback_query);
+  } else if (update.message) {
     var text = update.message.text || "";
     
     if (text == "/start" || text == "🏠 القائمة الرئيسية") {
