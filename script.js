@@ -1,4 +1,4 @@
-const GAMES_API_URL = "https://script.google.com/macros/s/AKfycbw0KbVLghDkg5f_IPTdgaqjLCz4GksEf_a2_AdfMyk9MA7w22szqWfJGg6jXLF2M2Rm/exec";
+const GAMES_API_URL = "https://script.google.com/macros/s/AKfycbwouTO-8CLhu0Rs92Oi9hbSgu8bbZj_spIlxBDiQ4ijRWVdCTPos0RoQrYJ3fXQhRtN/exec";
 
 let appsData = [];
 let lastDataHash = "";
@@ -243,10 +243,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // جلب البيانات لأول مرة
     fetchApps();
 
-    // تحديث البيانات كل 10 ثوانٍ (تحديث فوري)
+    // تحديث البيانات كل ثانية واحدة (تحديث فوري فائق السرعة)
     setInterval(() => {
         fetchApps(true);
-    }, 10000);
+    }, 1000);
 
     searchInput.addEventListener('input', (e) => {
         searchQuery = e.target.value.toLowerCase();
