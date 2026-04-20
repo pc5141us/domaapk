@@ -1,4 +1,4 @@
-const GAMES_API_URL = "https://script.google.com/macros/s/AKfycbwy66cxYkbMrD5SicQmxnr4bPFBxoj4QlSOAwYgH_3IFVsvh91ZJDP8upiXGUqEX9XX/exec";
+const GAMES_API_URL = "https://script.google.com/macros/s/AKfycbxgr2lfK9pdy4ChWEZIey5yahTsnd9zjh1XRoffPBhQzZnLI4o-jkuQGRhiKellMg4/exec";
 
 let appsData = [];
 let lastDataHash = "";
