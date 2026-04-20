@@ -1,5 +1,4 @@
-// رابط الـ API الخاص بـمشروع الألعاب على Vercel
-const GAMES_API_URL = "/api/games"; 
+const GAMES_API_URL = "https://script.google.com/macros/s/AKfycbx62qKg3x8gFAxF-tvQs176D9sN1NE292afMHSLDSSd3fZaxdzgA16C0HatmU-_PTZQ/exec"; 
 
 let appsData = [];
 

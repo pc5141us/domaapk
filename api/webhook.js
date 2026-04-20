@@ -29,10 +29,20 @@ module.exports = async (req, res) => {
             const appName = replyText.split("لـ ")[1];
             const appLink = text;
             
-            await sendMessage(chatId, `⏳ جاري معالجة الرفع...\n📦 **الاسم:** ${appName}\n🔗 **الرابط:** ${appLink}`);
+            await sendMessage(chatId, `⏳ جاري معالجة الرفع لـ ${appName}...`);
             
-            // هنا يتم الربط مع قاعدة بياناتك (مثل Google Sheets API)
-            await sendMessage(chatId, "✅ **تمت الإضافة بنجاح!** الموقع سيظهر فيه التطبيق الآن.");
+            // إرسال البيانات لجوجل شيت عبر الرابط الذي قدمته
+            try {
+                await axios.post("https://script.google.com/macros/s/AKfycbx62qKg3x8gFAxF-tvQs176D9sN1NE292afMHSLDSSd3fZaxdzgA16C0HatmU-_PTZQ/exec", {
+                    action: "add_from_vercel",
+                    name: appName,
+                    link: appLink
+                });
+                await sendMessage(chatId, "✅ **تمت الإضافة بنجاح!** الموقع سيظهر فيه التطبيق الآن.");
+            } catch (err) {
+                console.error("GAS API Error:", err);
+                await sendMessage(chatId, "❌ حدث خطأ أثناء الحفظ في جوجل شيت. تأكد من أن السكريبت مفعّل كـ Web App.");
+            }
             await sendMainKeyboard(chatId);
         }
         return res.status(200).send('OK');
