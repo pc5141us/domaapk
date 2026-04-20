@@ -5,8 +5,11 @@ let appsData = [];
 async function fetchApps() {
     const appGrid = document.getElementById('appGrid');
     try {
-        const response = await fetch(GAMES_API_URL);
+        // إضافة معلمة لمنع المتصفح من تخزين النتيجة (Cache Busting)
+        const response = await fetch(`${GAMES_API_URL}?t=${Date.now()}`);
         const data = await response.json();
+
+        console.log("Data received from API:", data);
 
         if (!data || data.length === 0) {
             // بيانات تجريبية في حال كانت قاعدة البيانات فارغة
