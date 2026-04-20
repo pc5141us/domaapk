@@ -13,13 +13,16 @@ module.exports = async (req, res) => {
     if (!message) return res.status(200).send('OK');
 
     const chatId = message.chat.id;
+    console.log("Incoming message from:", chatId);
     
-    // حماية الأدمن - البوت لا يستجيب إلا لك
-    if (chatId != adminId) {
-        await axios.post(`${telegramUrl}/sendMessage`, {
-            chat_id: chatId,
-            text: "⚠️ عذراً، هذا البوت خاص بإدارة متجر دوما APK فقط."
-        });
+    // حماية الأدمن - البوت لا يستجيب إلا لك (مقارنة نصية للأمان)
+    if (chatId.toString() !== adminId.toString()) {
+        try {
+            await axios.post(`${telegramUrl}/sendMessage`, {
+                chat_id: chatId,
+                text: "⚠️ عذراً، هذا البوت خاص بإدارة متجر دوما APK فقط."
+            });
+        } catch(e) {}
         return res.status(200).send('Unauthorized');
     }
 
@@ -38,7 +41,7 @@ module.exports = async (req, res) => {
         await sendMessage(chatId, "✅ القائمة محدثة دائماً على الموقع. للحذف، استخدم أمر /del متبوعاً بالاسم.", true);
     } 
     else if (text === '🌐 زيارة المتجر') {
-        await sendMessage(chatId, "🔗 رابط متجر دوما APK:\n[رابط_موقفك_هنا]", true);
+        await sendMessage(chatId, "🔗 رابط متجر دوما APK المباشر:\nhttps://domaapk.vercel.app/", true);
     } 
     else if (text.startsWith('/add')) {
         await processSmartAdd(chatId, text);

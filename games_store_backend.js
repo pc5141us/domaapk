@@ -42,7 +42,7 @@ function doPost(e) {
     } else if (text == "📋 عرض وحذف المحتوى") {
       listContentForControl(chatId);
     } else if (text == "🌐 زيارة الموقع") {
-      sendMessage(chatId, "🔗 رابط موقعك هو:\n[رابط_موقعك_على_Vercel_هنا]");
+      sendMessage(chatId, "🔗 يمكنك زيارة متجرك من هنا:\nhttps://domaapk.vercel.app/");
     } else if (text.startsWith("/add")) {
       processSmartAdd(chatId, text);
     } else {
