@@ -8,23 +8,68 @@ async function fetchApps() {
         const response = await fetch(GAMES_API_URL);
         const data = await response.json();
 
-        appsData = data.map(item => ({
-            id: item.id,
-            name: item.title,
-            description: item.description,
-            category: item.category,
-            tag: item.tag,
-            size: item.size || "يتباين حسب الجهاز",
-            icon: item.icon || "https://cdn-icons-png.flaticon.com/512/1152/1152912.png",
-            image: item.banner || "https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb",
-            downloadLink: item.previewUrl,
-            rating: (Math.random() * (5 - 4.5) + 4.5).toFixed(1)
-        }));
+        if (!data || data.length === 0) {
+            // بيانات تجريبية في حال كانت قاعدة البيانات فارغة
+            appsData = [
+                {
+                    id: "G1",
+                    name: "PUBG Mobile",
+                    description: "أشهر لعبة أكشن وبقاء للأندرويد بأحدث إصدار مهكرة.",
+                    category: "games",
+                    tag: "action",
+                    size: "1.2 GB",
+                    icon: "https://play-lh.googleusercontent.com/JRd0v_o_BakYpl90Y9O8A6uUfT3D8L-SbtVj7Y0G0Yf1Y9A9A9A9A9A9A9A9A9A9A",
+                    image: "https://images.unsplash.com/photo-1542751371-adc38448a05e",
+                    downloadLink: "#",
+                    rating: "4.8"
+                },
+                {
+                    id: "A1",
+                    name: "WhatsApp Gold",
+                    description: "نسخة واتساب الذهبية بمميزات خرافية وإعدادات خصوصية متقدمة.",
+                    category: "apps",
+                    tag: "social",
+                    size: "55 MB",
+                    icon: "https://cdn-icons-png.flaticon.com/512/124/124034.png",
+                    image: "https://images.unsplash.com/photo-1611743572933-e2206708064d",
+                    downloadLink: "#",
+                    rating: "4.9"
+                }
+            ];
+        } else {
+            appsData = data.map(item => ({
+                id: item.id,
+                name: item.title,
+                description: item.description,
+                category: item.category,
+                tag: item.tag,
+                size: item.size || "يتباين حسب الجهاز",
+                icon: item.icon || "https://cdn-icons-png.flaticon.com/512/1152/1152912.png",
+                image: item.banner || "https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb",
+                downloadLink: item.previewUrl,
+                rating: (Math.random() * (5 - 4.5) + 4.5).toFixed(1)
+            }));
+        }
 
         window.dispatchEvent(new Event('dataLoaded'));
     } catch (error) {
         console.error("Error fetching apps:", error);
-        appGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 3rem;">⚠️ لا يوجد اتصال مع قاعدة البيانات، يرجى الرفع عبر البوت أولاً.</div>';
+        // عرض بيانات تجريبية حتى عند الخطأ لتجربة التصميم
+        appsData = [
+            {
+                id: "G1",
+                name: "PUBG Mobile",
+                description: "أشهر لعبة أكشن وبقاء للأندرويد بأحدث إصدار مهكرة.",
+                category: "games",
+                tag: "action",
+                size: "1.2 GB",
+                icon: "https://play-lh.googleusercontent.com/JRd0v_o_BakYpl90Y9O8A6uUfT3D8L-SbtVj7Y0G0Yf1Y9A9A9A9A9A9A9A9A9A9A",
+                image: "https://images.unsplash.com/photo-1542751371-adc38448a05e",
+                downloadLink: "#",
+                rating: "4.8"
+            }
+        ];
+        window.dispatchEvent(new Event('dataLoaded'));
     }
 }
 
