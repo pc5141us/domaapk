@@ -133,7 +133,8 @@ module.exports = async (req, res) => {
                 const keyboard = {
                     keyboard: apps.map(app => [{ text: `⚙️ إدارة: ${app.title} (#${app.id})` }]),
                     resize_keyboard: true,
-                    one_time_keyboard: true
+                    one_time_keyboard: false,
+                    is_persistent: true
                 };
                 keyboard.keyboard.push([{ text: "🏠 القائمة الرئيسية" }]);
                 
