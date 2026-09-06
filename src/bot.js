@@ -1,6 +1,7 @@
 const { Bot } = require("grammy");
-const fetch = require("node-fetch");
 const { registerHostedBot, getHostedBot, getAllHostedBots } = require("./webhookEngine");
+const fetch = globalThis.fetch;
+
 const {
   getMainMenuKeyboard,
   getBackKeyboard,

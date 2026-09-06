@@ -1,34 +1,35 @@
 const fs = require("fs");
 const path = require("path");
+const os = require("os");
 
-// المسار المحلي لتخزين بيانات وملفات البوتات المستضافة
-const DATA_DIR = path.join(__dirname, "../data");
+// في بيئة Vercel Serverless، يكون المجلد الوحيد القابل للكتابة هو os.tmpdir() (/tmp)
+const DATA_DIR = path.join(os.tmpdir(), "telegram_bots_data");
 const BOTS_FILE = path.join(DATA_DIR, "hosted_bots.json");
 
-// التأكد من وجود مجلد البيانات
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-// القاموس المؤقت في الذاكرة
 let hostedBots = {};
 
-// تحميل البيانات المحفوظة سابقاً إن وجدت
+// تهيئة ذاكرة البيانات بأمان بدون التسبب في تعطل السيرفر
 try {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
   if (fs.existsSync(BOTS_FILE)) {
     const raw = fs.readFileSync(BOTS_FILE, "utf8");
     hostedBots = JSON.parse(raw);
   }
 } catch (e) {
-  console.error("Error reading hosted_bots.json:", e.message);
+  console.warn("Storage notice:", e.message);
   hostedBots = {};
 }
 
 function saveHostedBots() {
   try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
     fs.writeFileSync(BOTS_FILE, JSON.stringify(hostedBots, null, 2), "utf8");
   } catch (e) {
-    console.error("Error saving hosted_bots.json:", e.message);
+    console.warn("Save storage notice:", e.message);
   }
 }
 
@@ -36,7 +37,7 @@ function saveHostedBots() {
  * تسجيل وتخزين بوت جديد مع ملف الكود الخاص به
  */
 function registerHostedBot(botId, botToken, botInfo, fileName, fileContent) {
-  hostedBots[botId] = {
+  hostedBots[String(botId)] = {
     botId: String(botId),
     botToken,
     username: botInfo.username,
@@ -46,7 +47,7 @@ function registerHostedBot(botId, botToken, botInfo, fileName, fileContent) {
     updatedAt: new Date().toISOString(),
   };
   saveHostedBots();
-  return hostedBots[botId];
+  return hostedBots[String(botId)];
 }
 
 /**

@@ -1,5 +1,6 @@
-const fetch = require("node-fetch");
 const { getHostedBot } = require("../src/webhookEngine");
+const fetch = globalThis.fetch;
+
 
 module.exports = async (req, res) => {
   try {
