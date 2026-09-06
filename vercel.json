@@ -1,7 +1,21 @@
 {
   "version": 2,
-  "cleanUrls": true,
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" }
+    {
+      "source": "/api/webhook",
+      "destination": "/api/webhook.js"
+    },
+    {
+      "source": "/api/set-webhook",
+      "destination": "/api/set-webhook.js"
+    },
+    {
+      "source": "/api/info",
+      "destination": "/api/info.js"
+    },
+    {
+      "source": "/",
+      "destination": "/api/info.js"
+    }
   ]
 }

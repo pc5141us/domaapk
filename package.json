@@ -1,15 +1,26 @@
 {
-  "name": "doma-ai-links",
+  "name": "telegram-webhook-bot-arabic",
   "version": "1.0.0",
-  "private": true,
+  "description": "بوت تليجرام عربي بالكامل لإدارة الويب هوك والعمل على بيئة Vercel Serverless",
+  "main": "api/webhook.js",
   "scripts": {
-    "start": "serve .",
-    "dev": "vercel dev",
-    "bot": "node api/webhook.js"
+    "start": "node index.js",
+    "dev": "node index.js",
+    "test-bot": "node scripts/test-bot.js"
   },
+  "keywords": [
+    "telegram",
+    "bot",
+    "webhook",
+    "vercel",
+    "arabic",
+    "grammy"
+  ],
+  "author": "Antigravity",
+  "license": "MIT",
   "dependencies": {
-    "telegraf": "^4.16.3",
-    "googleapis": "^126.0.0",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "grammy": "^1.26.0"
   }
 }
