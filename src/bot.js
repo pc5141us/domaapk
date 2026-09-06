@@ -17,10 +17,9 @@ const bot = new Bot(BOT_TOKEN);
 // إدارة جلسات الخطوات للمستخدمين
 const userSessions = new Map();
 
-// النطاق الأساسي للاستضافة على Vercel
-const VERCEL_DOMAIN = process.env.VERCEL_URL
-  ? (process.env.VERCEL_URL.startsWith("http") ? process.env.VERCEL_URL : `https://${process.env.VERCEL_URL}`)
-  : "https://domaapk.vercel.app";
+// النطاق الأساسي الرسمي لـ Vercel
+const VERCEL_DOMAIN = "https://domaapk.vercel.app";
+
 
 const WELCOME_MESSAGE = `
 👋 **أهلاً بك في صانع ومستضيف الويب هوك التلقائي للبوتات**
