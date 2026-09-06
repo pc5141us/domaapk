@@ -1,8 +1,8 @@
 const { Telegraf } = require('telegraf');
 
 // --- بياناتك المحفوظة ---
-const BOT_TOKEN = '8402726492:AAGLLp8_8wjBBUSA175XB2pM83xty2DmgCU';
-const OWNER_ID = '682572594';
+const BOT_TOKEN = '8791910472:AAHdsZB1hn5VJYqnG_s3Zy2TLbSOTHmLBYE';
+const OWNER_ID = '8791910472';
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyZ6Cdjn2WPM82EOrEZGUPrLXtE9Mt6UrfxrZPQngCiRB-4I6ewgsW7cRBxOONeugcv/exec';
 
 const bot = new Telegraf(BOT_TOKEN);
