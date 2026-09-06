@@ -4,18 +4,18 @@ module.exports = async (req, res) => {
   try {
     // استخراج الهوست تلقائياً من الطلب أو من المتغيرات البيئية
     const protocol = req.headers["x-forwarded-proto"] || "https";
-    const host = req.headers["x-forwarded-host"] || req.headers.host;
+    const host = req.headers["host"] || req.headers["x-forwarded-host"];
     
     // إمكانية تحديد رابط مخصص عبر البارامتر ?url=https://...
     let webhookUrl = req.query.url;
 
     if (!webhookUrl) {
-      if (process.env.VERCEL_URL && !process.env.VERCEL_URL.includes("localhost")) {
+      if (host) {
+        webhookUrl = `${protocol}://${host}/api/webhook`;
+      } else if (process.env.VERCEL_URL && !process.env.VERCEL_URL.includes("localhost")) {
         let envUrl = process.env.VERCEL_URL;
         if (!envUrl.startsWith("http")) envUrl = `https://${envUrl}`;
         webhookUrl = `${envUrl}/api/webhook`;
-      } else if (host) {
-        webhookUrl = `${protocol}://${host}/api/webhook`;
       }
     }
 
