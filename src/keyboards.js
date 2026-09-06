@@ -10,7 +10,7 @@ function getMainMenuKeyboard() {
     .text("ℹ️ فحص ويب هوك أي بوت", "start_info_other")
     .text("🗑️ حذف ويب هوك أي بوت", "start_delete_other")
     .row()
-    .text("📂 قوالب وسورس كود جاهز للرفع", "download_templates")
+    .text("📂 صيغ وقوالب الملفات المعتمدة للردود", "download_templates")
     .row()
     .text("🤖 بيانات المحرك المستضيف", "this_bot_info");
 }
@@ -29,8 +29,11 @@ function getBackKeyboard() {
  */
 function getTemplatesKeyboard() {
   return new InlineKeyboard()
-    .text("📜 قالب Node.js جاهز", "tpl_nodejs")
-    .text("📜 قالب PHP جاهز", "tpl_php")
+    .text("📜 صيغة JSON للردود التلقائية", "tpl_json")
+    .text("📜 صيغة نصية TXT بسيطة", "tpl_txt")
+    .row()
+    .text("📜 صيغة JS / Node.js", "tpl_nodejs")
+    .text("📜 صيغة PHP", "tpl_php")
     .row()
     .text("🔙 العودة للقائمة الرئيسية", "main_menu");
 }

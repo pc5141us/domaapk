@@ -125,16 +125,55 @@ bot.callbackQuery("download_templates", async (ctx) => {
   );
 });
 
+bot.callbackQuery("tpl_json", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const codeJson = `
+📜 **قالب JSON جاهز للردود المخصصة:**
+
+\`\`\`json
+{
+  "/start": "مرحباً بك في بوتي الخاص!",
+  "/help": "قائمة المساعدة والخدمات المتوفرة",
+  "سلام": "وعليكم السلام ورحمة الله وبركاته",
+  "من انت": "أنا بوت آلي للرد الفوري!"
+}
+\`\`\`
+💡 احفظ هذا النص في ملف باسم \`rules.json\` وارفعه للبوت مباشرة بعد إرسال التوكن وسيرد البوت بهذه النصوص بالضبط!
+`;
+  await ctx.editMessageText(codeJson, {
+    parse_mode: "Markdown",
+    reply_markup: getTemplatesKeyboard(),
+  });
+});
+
+bot.callbackQuery("tpl_txt", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const codeTxt = `
+📜 **قالب نصي TXT بسيط للردود:**
+
+\`\`\`text
+/start = مرحباً بك في البوت!
+/help = تواصل معنا عبر الدعم
+هلا = أهلاً وسهلاً بك
+\`\`\`
+💡 احفظ هذا النص في ملف باسم \`bot.txt\` وارفعه للبوت وسيقوم بالرد بناءً عليه!
+`;
+  await ctx.editMessageText(codeTxt, {
+    parse_mode: "Markdown",
+    reply_markup: getTemplatesKeyboard(),
+  });
+});
+
 bot.callbackQuery("tpl_nodejs", async (ctx) => {
   await ctx.answerCallbackQuery();
   const codeNode = `
-📜 **قالب Node.js جاهز للرفع:**
+📜 **قالب Node.js / JavaScript:**
 
 \`\`\`javascript
 // ملف bot.js
-console.log("Welcome to my Webhook Bot!");
+bot.on("/start", () => reply("أهلاً بك في البوت البرمجي الخاص بي!"));
 \`\`\`
-💡 احفظ هذا النص في ملف باسم \`bot.js\` وارفعه للبوت مباشرة بعد إرسال التوكن!
+💡 ارفع ملف \`bot.js\` للبوت وسيقوم البوت باستخراج الردود البرمجية والرد بها فوراً!
 `;
   await ctx.editMessageText(codeNode, {
     parse_mode: "Markdown",
