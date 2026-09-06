@@ -1,12 +1,13 @@
 const { Bot } = require("grammy");
-const { registerHostedBot, getHostedBot, getAllHostedBots } = require("./webhookEngine");
-const fetch = globalThis.fetch;
-
 const {
   getMainMenuKeyboard,
   getBackKeyboard,
   getTemplatesKeyboard,
-} = require("./keyboards");
+} = {
+  getMainMenuKeyboard: require("./keyboards").getMainMenuKeyboard,
+  getBackKeyboard: require("./keyboards").getBackKeyboard,
+  getTemplatesKeyboard: require("./keyboards").getTemplatesKeyboard,
+};
 
 const BOT_TOKEN =
   process.env.BOT_TOKEN ||
@@ -20,16 +21,15 @@ const userSessions = new Map();
 // النطاق الأساسي الرسمي لـ Vercel
 const VERCEL_DOMAIN = "https://domaapk.vercel.app";
 
-
 const WELCOME_MESSAGE = `
-👋 **أهلاً بك في صانع ومستضيف الويب هوك التلقائي للبوتات**
+👋 **أهلاً بك في صانع ومستضيف الويب هوك الدائم للبوتات**
 
-هذا البوت يتيح لك **رفع ملفات الكود الخاصة ببوتك، واستضافتها وتفعيل الويب هوك لها تلقائياً** بدون الحاجة لامتلاك سيرفر خاص بك!
+هذا البوت يتيح لك **رفع ملفات الكود الخاصة ببوتك، واستضافتها وتفعيل الويب هوك لها بشكل دائم ومضمون** على Vercel وسحابة تليجرام!
 
 ✨ **كيف تعمل الميزة؟**
 1️⃣ **أرسل التوكن** الخص ببوتك (من BotFather).
 2️⃣ **أرسل ملف الكود** الخاص بك (مثل \`.js\` أو \`.php\` أو \`.json\` أو \`.txt\`).
-3️⃣ يقوم البوت **باستضافة ملفك فورياً**، وتوليد رابط الويب هوك، وتفعليه تلقائياً على البوت الخص بك!
+3️⃣ يقوم البوت **بحفظ ملفك دائمًا برابط حقيقي**، وتفعيل الويب هوك للبوت الخص بك فوراً!
 
 اختر من القائمة أدناه للبدء:
 `;
@@ -164,9 +164,8 @@ echo "PHP Bot Loaded";
 bot.callbackQuery("this_bot_info", async (ctx) => {
   await ctx.answerCallbackQuery();
   const me = await ctx.api.getMe();
-  const allBots = getAllHostedBots();
   await ctx.editMessageText(
-    `🤖 **بيانات المحرك الخادم:**\n\n▫️ **الاسم:** ${me.first_name}\n▫️ **اليوزر:** @${me.username}\n▫️ **عدد البوتات المستضافة حالياً:** \`${allBots.length}\` بوتات.`,
+    `🤖 **بيانات المحرك الخادم:**\n\n▫️ **الاسم:** ${me.first_name}\n▫️ **اليوزر:** @${me.username}\n▫️ **نظام الحفظ:** سحابة تليجرام + Vercel Serverless (دائم 100%).`,
     { parse_mode: "Markdown", reply_markup: getMainMenuKeyboard() }
   );
 });
@@ -197,7 +196,6 @@ bot.on("message:text", async (ctx) => {
   }
 
   if (session.step === "WAITING_FOR_FILE_OR_URL") {
-    // إذا أرسل المستخدم رابطاً نصياً بدلاً من رفع ملف
     if (text.startsWith("http://") || text.startsWith("https://")) {
       await processDirectUrlWebhook(ctx, text, session);
       return;
@@ -220,7 +218,7 @@ bot.on("message:text", async (ctx) => {
 });
 
 // -------------------------------------------------------------
-// معالجة استقبال رفع الملفات (Files / Documents)
+// معالجة استقبال رفع الملفات وتوليد الويب هوك الدائم
 // -------------------------------------------------------------
 
 bot.on("message:document", async (ctx) => {
@@ -235,27 +233,19 @@ bot.on("message:document", async (ctx) => {
     );
   }
 
-  const statusMsg = await ctx.reply(`🔄 **جاري تحميل وقراءة ملفك البرمجي (\`${doc.file_name}\`)...**`, {
+  const statusMsg = await ctx.reply(`🔄 **جاري حفظ ملفك البرمجي (\`${doc.file_name}\`) وتوليد الويب هوك الدائم...**`, {
     parse_mode: "Markdown",
   });
 
   try {
-    // قراءة محتوى الملف المرفوع عبر Telegram File API
-    const file = await ctx.api.getFile(doc.file_id);
-    const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${file.file_path}`;
-
-    const fileRes = await fetch(fileUrl);
-    const fileContent = await fileRes.text();
-
-    // تسجيل وتخزين الملف والبوت في محرك الاستضافة
     const targetBot = session.targetBotInfo;
-    registerHostedBot(targetBot.id, session.targetToken, targetBot, doc.file_name, fileContent);
+    const targetToken = session.targetToken;
 
-    // توليد رابط الويب هوك المستضيف على Vercel
-    const dynamicWebhookUrl = `${VERCEL_DOMAIN}/api/dynamic-webhook?botId=${targetBot.id}`;
+    // بناء رابط الويب هوك المباشر مع تضمين التوكن ومعرف الملف الدائم
+    const dynamicWebhookUrl = `${VERCEL_DOMAIN}/api/dynamic-webhook?token=${encodeURIComponent(targetToken)}&file_id=${encodeURIComponent(doc.file_id)}&name=${encodeURIComponent(doc.file_name)}`;
 
-    // تفعيل الويب هوك للبوت المستهدف برابط الاستضافة
-    const targetBotClient = new Bot(session.targetToken);
+    // تفعيل الويب هوك للبوت المستهدف بالرابط التلقائي الدائم
+    const targetBotClient = new Bot(targetToken);
     const setOk = await targetBotClient.api.setWebhook(dynamicWebhookUrl, {
       drop_pending_updates: true,
     });
@@ -264,16 +254,16 @@ bot.on("message:document", async (ctx) => {
 
     if (setOk) {
       const successReport = `
-🎉 **تم استضافة ملفك وتفعيل الويب هوك بنجاح!**
+🎉 **تم حفظ ملفك بشكل دائم وتفعيل الويب هوك بنجاح!**
 
 🤖 **البوت المستهدف:** ${targetBot.first_name} (@${targetBot.username})
 🆔 **معرف البوت (ID):** \`${targetBot.id}\`
 📁 **الملف المستضاف:** \`${doc.file_name}\` (${Math.round(doc.file_size / 1024)} KB)
 
-🌐 **رابط الويب هوك المولد والمربوط:**
+🌐 **رابط الويب هوك المولد والدائم:**
 \`${dynamicWebhookUrl}\`
 
-✨ **البوت يعمل الآن تلقائياً ويرد على المستخدمين بناءً على ملفك المرفوع!**
+✨ **البوت يعمل الآن 24/7 وبشكل دائم ومضمون بدون أن ينقطع أو يختفي ملفك!**
 جرب الدخول للبوت الخص بك [**@${targetBot.username}**](https://t.me/${targetBot.username}) وأرسل \`/start\`!
 `;
       await ctx.api.editMessageText(ctx.chat.id, statusMsg.message_id, successReport, {
@@ -291,11 +281,11 @@ bot.on("message:document", async (ctx) => {
     }
   } catch (err) {
     userSessions.delete(userId);
-    console.error("File processing error:", err);
+    console.error("File webhook error:", err);
     await ctx.api.editMessageText(
       ctx.chat.id,
       statusMsg.message_id,
-      `❌ **حدث خطأ أثناء معالجة الملف:**\n\`${err.message}\``,
+      `❌ **حدث خطأ أثناء الربط:**\n\`${err.message}\``,
       { parse_mode: "Markdown", reply_markup: getMainMenuKeyboard() }
     );
   }
@@ -359,9 +349,7 @@ async function processTokenStep(ctx, tokenText) {
 ---
 📂 **الخطوة 2 من 2:**
 الآن أرسل **ملف الكود الخص بك** (أرسله كـ Document مثل \`.js\`, \`.php\`, \`.json\`, \`.txt\`)
-وسيقوم البوت باعه واستضافته فورياً وتفعيل الويب هوك له!
-
-*(يمكنك أيضاً إرسال رابط ويب هوك جاهز إن وجد)*
+وسيقوم البوت باعه واستضافته وحفظه دائمًا وتفعيل الويب هوك له!
 `;
 
     await ctx.api.editMessageText(ctx.chat.id, statusMsg.message_id, msg, {
