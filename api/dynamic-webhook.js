@@ -1,48 +1,50 @@
 const fetch = globalThis.fetch;
 const { BOT_TOKEN } = require("../src/bot");
 
-// كاش مؤقت للذاكرة لسرعة جلب محتوى الملفات
+// كاش مؤقت للذاكرة السريعة
 const fileCache = new Map();
 
 /**
- * تحليل واستخراج الرد المناسب بناءً على محتوى الملف المرفوع
+ * تحليل واستخراج الرد المناسب من محتوى الملف المرفوع بأمان بدون أخطاء تنسيق
  */
 function parseAndExecuteFile(fileContent, text, userFirstName) {
   if (!fileContent || typeof fileContent !== "string") return null;
 
   const trimmedContent = fileContent.trim();
+  if (!trimmedContent) return null;
+
   const lowerText = text.toLowerCase().trim();
 
   // 1. محاولة قراءة الملف كـ JSON
   try {
     const jsonRules = JSON.parse(trimmedContent);
     if (typeof jsonRules === "object" && jsonRules !== null) {
-      // البحث عن مفتاح يطابق نص الرسالة
-      for (const [key, val] of Object.entries(jsonRules)) {
-        const cleanKey = key.trim().toLowerCase();
-        if (cleanKey === lowerText || (cleanKey.length > 1 && lowerText.includes(cleanKey))) {
-          return typeof val === "string" ? val : JSON.stringify(val, null, 2);
-        }
-      }
-      // إذا كان المصفوفة تحتوي على كائنات قواعد
       if (Array.isArray(jsonRules)) {
         for (const rule of jsonRules) {
           const matchTarget = String(rule.command || rule.trigger || rule.key || "").toLowerCase();
           if (matchTarget && lowerText.includes(matchTarget)) {
-            return rule.response || rule.reply || rule.text || rule.msg;
+            return String(rule.response || rule.reply || rule.text || rule.msg || "");
+          }
+        }
+      } else {
+        for (const [key, val] of Object.entries(jsonRules)) {
+          const cleanKey = key.trim().toLowerCase();
+          if (cleanKey === lowerText || (cleanKey.length > 0 && lowerText.includes(cleanKey))) {
+            return typeof val === "string" ? val : JSON.stringify(val, null, 2);
           }
         }
       }
     }
-  } catch (e) {
-    // ليس JSON، ننتقل للتحليل البرمجي لـ JS / PHP / TXT
-  }
+  } catch (e) {}
 
-  // 2. تحليل الأسطر من نمط (أمر = رد) أو (كلمة => رد)
-  const lines = trimmedContent.split("\n");
+  // 2. تحليل الأسطر البرمجية والنصية (مثل: أمر = رد أو كلمة => رد)
+  const lines = trimmedContent.split(/\r?\n/);
   for (const line of lines) {
-    if (line.includes("=") || line.includes("=>") || line.includes(":")) {
-      const parts = line.split(/=>|=/);
+    const cleanLine = line.trim();
+    if (!cleanLine || cleanLine.startsWith("//") || cleanLine.startsWith("#")) continue;
+
+    if (cleanLine.includes("=") || cleanLine.includes("=>") || cleanLine.includes(":")) {
+      const parts = cleanLine.split(/=>|=/);
       if (parts.length >= 2) {
         const trigger = parts[0].replace(/['"`;]/g, "").trim().toLowerCase();
         const response = parts.slice(1).join("=").replace(/['"`;]/g, "").trim();
@@ -53,20 +55,24 @@ function parseAndExecuteFile(fileContent, text, userFirstName) {
     }
   }
 
-  // 3. استخراج نصوص الاقتباس الموجهة للرد مثل reply("...") أو sendMessage("...") أو echo "..."
-  const stringMatches = Array.from(trimmedContent.matchAll(/(?:reply|sendMessage|send|text|echo|print)\s*\(?\s*['"`]([^'"`]+)['"`]/gi));
-  if (stringMatches.length > 0) {
-    // إذا كان الأمر /start، نرجع أول نص اقتباس في الملف البرمجي المرفوع
+  // 3. استخراج نصوص الاقتباس الموجهة للرد في كود JS/PHP/Python
+  const matches = Array.from(trimmedContent.matchAll(/(?:reply|sendMessage|send|text|echo|print|return)\s*\(?\s*['"`]([^'"`]+)['"`]/gi));
+  if (matches.length > 0) {
     if (lowerText.startsWith("/start")) {
-      return stringMatches[0][1];
+      return matches[0][1];
     }
-    // البحث عن مطابقة جزئية
-    for (const m of stringMatches) {
-      if (m[1] && m[1].length > 2) {
+    for (const m of matches) {
+      if (m[1] && m[1].length > 1) {
         return m[1];
       }
     }
-    return stringMatches[0][1];
+    return matches[0][1];
+  }
+
+  // 4. استجابة افتراضية ذكية إذا كان الملف نصي عام
+  if (lowerText.startsWith("/start")) {
+    const previewLine = lines.find(l => l.trim().length > 0) || "";
+    return `👋 أهلاً بك يا ${userFirstName}!\n\nتم تشغيل البوت بنجاح بناءً على الملف المرفوع (${lines.length} سطر).\n\nمحتوى أول سطر:\n${previewLine}`;
   }
 
   return null;
@@ -127,31 +133,35 @@ module.exports = async (req, res) => {
       }
     }
 
-    // محاولة تنفيذ واستخراج الرد من الملف المرفوع نفسه
+    // محاولة استخراج الرد المباشر من محتوى الملف المرفوع
     let responseText = parseAndExecuteFile(fileContent, text, userFirstName);
 
-    // إذا لم يتوفر رد محدد من الملف المرفوع، نرجع الرد الافتراضي
+    // الرد الافتراضي عند عدم وجود مطابقة للكلمة
     if (!responseText) {
       if (text.startsWith("/start")) {
-        responseText = `👋 **أهلاً بك يا ${userFirstName}!**\n\nالبوت يعمل بنجاح بناءً على ملفك البرمجي المرفوع (\`${fileName}\`)! ✨`;
+        responseText = `👋 أهلاً بك يا ${userFirstName}!\n\nتم تشغيل البوت بنجاح بموجب الملف البرمجي المرفوع (${fileName})! ✨`;
       } else {
-        responseText = `💬 **استلمنا رسالتك:** "${text}"\n⚡ يتم معالجتها بموجب ملفك البرمجي المرفوع (\`${fileName}\`).`;
+        responseText = `💬 استلمنا رسالتك: "${text}"\n⚡ يتم المعالجة بموجب الملف البرمجي المرفوع (${fileName}).`;
       }
     }
 
-    // إرسال الرد للبوت المستهدف
+    // إرسال الرد للبوت المستهدف (بدون إجبار parse_mode لتجنب خطأ التنسيق والرموز)
     const sendMessageUrl = `https://api.telegram.org/bot${targetToken}/sendMessage`;
-    await fetch(sendMessageUrl, {
+    const sendRes = await fetch(sendMessageUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: chatId,
         text: responseText,
-        parse_mode: "Markdown",
       }),
     });
 
-    return res.status(200).json({ ok: true, note: "Executed custom file response successfully" });
+    const sendJson = await sendRes.json();
+    if (!sendJson.ok) {
+      console.error("Telegram sendMessage API Error:", sendJson);
+    }
+
+    return res.status(200).json({ ok: true, note: "Executed custom file response safely" });
   } catch (err) {
     console.error("Dynamic Webhook Execution Error:", err);
     return res.status(200).json({ ok: true, note: "Handled safely", error: err.message });
