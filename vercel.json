@@ -6,6 +6,10 @@
       "destination": "/api/webhook.js"
     },
     {
+      "source": "/api/dynamic-webhook",
+      "destination": "/api/dynamic-webhook.js"
+    },
+    {
       "source": "/api/set-webhook",
       "destination": "/api/set-webhook.js"
     },
