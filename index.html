@@ -1,132 +1,133 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>متجر دوما APK | ألعاب وبرامج أندرويد</title>
-    <meta name="description" content="أفضل متجر لتحميل ملفات APK للأندرويد. ألعاب مهكرة، برامج برو، وأحدث تطبيقات الأندرويد بروابط مباشرة.">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="index.css">
-    <script src="ads.js" defer></script>
+    <title>صفحتي الشخصية | حمدي</title>
+    <meta name="description" content="روابط التواصل الاجتماعي الخاصة بي">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=IBM+Plex+Sans+Arabic:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-    <div class="glow-overlay"></div>
-    
-    <nav class="navbar">
-        <div class="container nav-container">
-            <div class="logo">
-                <i class="fab fa-android"></i>
-                <span>دوما<span>APK</span></span>
-            </div>
-            <div class="search-bar">
-                <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="ابحث عن لعبة أو برنامج...">
-            </div>
-            <ul class="nav-links">
-                <li><a href="#" class="active" data-category="all">الكل</a></li>
-                <li><a href="#" data-category="games">ألعاب</a></li>
-                <li><a href="#" data-category="apps">برامج</a></li>
-            </ul>
-        </div>
-    </nav>
 
-    <header class="hero">
-        <div class="hero-content container">
-            <h1>أفضل تطبيقات وألعاب <br><span>الأندرويد APK</span></h1>
-            <p>حمل أحدث إصدارات الأندرويد المهكرة والبرامج الاحترافية بروابط APK مباشرة.</p>
-            <div class="hero-stats">
-                <div class="stat-item">
-                    <span class="stat-value">+500</span>
-                    <span class="stat-label">لعبة</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value">+200</span>
-                    <span class="stat-label">برنامج</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value">100%</span>
-                    <span class="stat-label">آمن</span>
-                </div>
-            </div>
-            <!-- Header Ad -->
-            <div id="ad-header" class="ad-container"></div>
-        </div>
-    </header>
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
 
     <main class="container">
-        <section class="filter-section">
-            <div class="chips-container" id="categoryChips">
-                <button class="chip active" data-filter="all">الكل</button>
-                <button class="chip" data-filter="action">أكشن</button>
-                <button class="chip" data-filter="sports">رياضة</button>
-                <button class="chip" data-filter="social">تواصل</button>
+        <div class="profile-card">
+            <div class="profile-header">
+                <div class="image-wrapper animate-entry">
+                    <img id="profile-img" src="https://lh3.googleusercontent.com/d/1dGWqi0CjHvJm821cLtIfywM3PK3OYEf-" alt="صفحة حمدي الشخصية" class="profile-img">
+                </div>
+                <h1 id="profile-name" class="animate-entry" style="animation-delay: 0.1s;">حمدي احمد</h1>
+                <p id="profile-bio" class="bio animate-entry" style="animation-delay: 0.2s;">اهلا بك في موقعي للتواصل معي</p>
             </div>
-        </section>
 
-        <!-- Mid Content Ad -->
-        <div id="ad-mid" class="ad-container"></div>
+            <div id="links-container" class="links-grid">
+                <!-- إضافة target="_blank" لفتح الروابط في صفحة جديدة -->
+                <a href="https://www.facebook.com/hamdy5141u" class="link-item animate-entry" style="animation-delay: 0.3s; display: flex;" id="facebook-link" target="_blank" rel="noopener noreferrer">
+                    <div class="link-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-facebook"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" /></svg>
+                    </div>
+                    <span class="link-text">فيسبوك</span>
+                    <span class="link-arrow">←</span>
+                </a>
 
-        <section class="app-grid" id="appGrid">
-            <!-- Apps will be injected here -->
-            <div class="loader"></div>
-        </section>
+                <a href="https://wa.me/201002002957" class="link-item animate-entry" style="animation-delay: 0.4s; display: flex;" id="whatsapp-link" target="_blank" rel="noopener noreferrer">
+                    <div class="link-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-phone"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg>
+                    </div>
+                    <span class="link-text">واتساب</span>
+                    <span class="link-arrow">←</span>
+                </a>
+
+                <a href="https://www.instagram.com/hamdydoma77/" class="link-item animate-entry" style="animation-delay: 0.5s; display: flex;" id="instagram-link" target="_blank" rel="noopener noreferrer">
+                    <div class="link-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-instagram"><rect width="20" height="20" x="2" y="2" rx="5" ry="5" /><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" /><line x1="17.5" x2="17.51" y1="6.5" y2="6.5" /></svg>
+                    </div>
+                    <span class="link-text">إنستجرام</span>
+                    <span class="link-arrow">←</span>
+                </a>
+
+                <a href="https://t.me/infohamdybot" class="link-item animate-entry" style="animation-delay: 0.6s; display: flex;" id="telegram-link" target="_blank" rel="noopener noreferrer">
+                    <div class="link-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send"><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></svg>
+                    </div>
+                    <span class="link-text">تليجرام</span>
+                    <span class="link-arrow">←</span>
+                </a>
+            </div>
+
+            <footer class="animate-entry" style="animation-delay: 1s;">
+                <p>© 2026 جميع الحقوق محفوظة</p>
+            </footer>
+        </div>
     </main>
 
-    <!-- Footer Ad -->
-    <div id="ad-footer" class="ad-container" style="margin-bottom: 20px;"></div>
+    <script>
+        let lastData = "";
 
-    <footer class="footer">
-        <div class="container footer-content">
-            <div class="footer-info">
-                <div class="logo">
-                    <i class="fab fa-android"></i>
-                    <span>دوما<span>APK</span></span>
-                </div>
-                <p>وجهتك الأولى لتحميل أفضل تطبيقات وألعاب الأندرويد (APK) الأصلية والمهكرة.</p>
-            </div>
-            <div class="footer-links">
-                <h3>روابط سريعة</h3>
-                <ul>
-                    <li><a href="#">الرئيسية</a></li>
-                    <li><a href="#">الألعاب</a></li>
-                    <li><a href="#">البرامج</a></li>
-                </ul>
-            </div>
-            <div class="footer-social">
-                <h3>تابعنا</h3>
-                <div class="social-icons">
-                    <a href="#"><i class="fab fa-telegram"></i></a>
-                    <a href="#"><i class="fab fa-facebook"></i></a>
-                    <a href="#"><i class="fab fa-youtube"></i></a>
-                </div>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2026 جميع الحقوق محفوظة لمتجر دوما</p>
-        </div>
-    </footer>
+        async function loadSiteData() {
+            try {
+                let data = null;
+                try {
+                    const response = await fetch('/api/site-data?v=' + Date.now());
+                    if (response.ok) {
+                        data = await response.json();
+                    }
+                } catch (e) {}
 
-    <!-- Details Modal -->
-    <div id="appModal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <div id="modalDetails"></div>
-        </div>
-    </div>
+                if (!data || data.error) {
+                    const scriptUrl = 'https://script.google.com/macros/s/AKfycbyZ6Cdjn2WPM82EOrEZGUPrLXtE9Mt6UrfxrZPQngCiRB-4I6ewgsW7cRBxOONeugcv/exec?v=' + Date.now();
+                    const response = await fetch(scriptUrl);
+                    if (response.ok) {
+                        data = await response.json();
+                    }
+                }
+                
+                if (data) {
+                    const dataStr = JSON.stringify(data);
+                    if (dataStr === lastData) return;
+                    lastData = dataStr;
 
-    <!-- Download Confirmation Modal -->
-    <div id="downloadModal" class="modal confirmation-container">
-        <div class="modal-content confirmation-content">
-            <span class="close-download-modal">&times;</span>
-            <div id="downloadInfo">
-                <!-- Content will be injected by JS -->
-            </div>
-            <!-- Modal Ad Position -->
-            <div id="ad-modal" class="ad-container-modal"></div>
-        </div>
-    </div>
+                    if (data.name) document.getElementById('profile-name').innerText = data.name;
+                    if (data.bio) document.getElementById('profile-bio').innerText = data.bio;
+                    
+                    const links = {
+                        'facebook-link': data.fb_link,
+                        'whatsapp-link': data.wa_link,
+                        'instagram-link': data.ig_link,
+                        'telegram-link': data.tg_link
+                    };
 
-    <script src="script.js"></script>
+                    for (const [id, url] of Object.entries(links)) {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            if (url) {
+                                el.href = url.startsWith('http') ? url : 'https://' + url;
+                                el.style.display = 'flex';
+                            } else {
+                                el.style.display = 'none';
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.log('Update check failed');
+            }
+        }
+
+        loadSiteData();
+        setInterval(loadSiteData, 2000);
+    </script>
 </body>
+
 </html>

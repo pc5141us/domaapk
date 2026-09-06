@@ -1,10 +1,7 @@
 {
   "version": 2,
+  "cleanUrls": true,
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/$1" }
-  ],
-  "env": {
-    "BOT_TOKEN": "8791910472:AAFV5-CMq0QuOnPGa8QR-UmxTGOWOjySrds"
-  }
+    { "source": "/api/(.*)", "destination": "/api/$1" }
+  ]
 }
