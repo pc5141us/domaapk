@@ -13,7 +13,7 @@ module.exports = async (req, res) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة معلومات بوت الويب هوك | ${botInfo.first_name}</title>
+    <title>صانع ومقترن الويب هوك | ${botInfo.first_name}</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
@@ -37,7 +37,7 @@ module.exports = async (req, res) => {
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 24px;
             width: 100%;
-            max-width: 650px;
+            max-width: 680px;
             padding: 36px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
@@ -107,10 +107,6 @@ module.exports = async (req, res) => {
             color: #4ade80;
             font-weight: 700;
         }
-        .status-inactive {
-            color: #f87171;
-            font-weight: 700;
-        }
         .btn-group {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -134,65 +130,47 @@ module.exports = async (req, res) => {
             color: white;
             box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
         }
-        .btn-primary:hover {
-            opacity: 0.95;
-            transform: translateY(-1px);
-        }
         .btn-secondary {
             background: rgba(51, 65, 85, 0.8);
             color: #e2e8f0;
             border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .btn-secondary:hover {
-            background: rgba(71, 85, 105, 0.9);
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <span class="badge">🤖 Vercel Serverless Bot</span>
+            <span class="badge">🤖 Telegram Multi-Bot Webhook Factory</span>
             <h1>${botInfo.first_name} (@${botInfo.username})</h1>
-            <p class="subtitle">بوت إدارة الويب هوك وتطبيقات Vercel باللغة العربية</p>
+            <p class="subtitle">صانع ومقترن الويب هوك الشامل لبوتات تليجرام الأخرى</p>
         </div>
 
         <div class="card">
-            <div class="card-title">🌐 حالة الويب هوك (Webhook Status)</div>
-            <div class="info-row">
-                <span class="label">الحالة الحالية:</span>
-                <span class="value ${webhookInfo.url ? "status-active" : "status-inactive"}">
-                    ${webhookInfo.url ? "مفعل ومربوط ✅" : "غير مرتبط ❌"}
-                </span>
-            </div>
-            <div class="info-row">
-                <span class="label">الرابط المرتبط:</span>
-                <span class="value">${webhookInfo.url || "لا يوجد"}</span>
-            </div>
-            <div class="info-row">
-                <span class="label">الرسائل المعلقة (Pending):</span>
-                <span class="value">${webhookInfo.pending_update_count}</span>
-            </div>
-            <div class="info-row">
-                <span class="label">آخر خطأ:</span>
-                <span class="value" style="color: #fbbf24;">${webhookInfo.last_error_message || "لا يوجد أخطاء"}</span>
-            </div>
+            <div class="card-title">✨ وظيفة البوت الرئيسية</div>
+            <p style="color: #cbd5e1; font-size: 14px; line-height: 1.6;">
+                يتيح لك هذا البوت ربط وتأكيد وتحديد رابط الويب هوك لأي بوت تليجرام آخر عن طريق تزويد التوكن الخاص به ورابط السيرفر أو رفع الملف البرمجي الخاص به مباشرة داخل المحادثة.
+            </p>
         </div>
 
         <div class="card">
-            <div class="card-title">🤖 بيانات البوت (Bot Details)</div>
+            <div class="card-title">🤖 حالة البوت الحالي الخادم</div>
             <div class="info-row">
                 <span class="label">معرف البوت (ID):</span>
                 <span class="value">${botInfo.id}</span>
             </div>
             <div class="info-row">
-                <span class="label">المجموعات:</span>
-                <span class="value">${botInfo.can_join_groups ? "مسموح" : "غير مسموح"}</span>
+                <span class="label">رابط الويب هوك الخادم:</span>
+                <span class="value">${webhookInfo.url || "غير مفعّل"}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">حالة المحرك:</span>
+                <span class="value status-active">جاهز للاستخدام 100% ✅</span>
             </div>
         </div>
 
         <div class="btn-group">
-            <a href="/api/set-webhook" class="btn btn-primary">⚡ ربط الويب هوك تلقائياً</a>
-            <a href="https://t.me/${botInfo.username}" target="_blank" class="btn btn-secondary">💬 فتح البوت في تليجرام</a>
+            <a href="https://t.me/${botInfo.username}" target="_blank" class="btn btn-primary">💬 ربط بوت جديد في تليجرام</a>
+            <a href="/api/set-webhook" class="btn btn-secondary">⚡ تحديث ويب هوك البوت الرئيسي</a>
         </div>
     </div>
 </body>

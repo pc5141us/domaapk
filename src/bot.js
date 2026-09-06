@@ -1,41 +1,37 @@
-const { Bot } = require("grammy");
+const { Bot, InputFile } = require("grammy");
+const fetch = require("node-fetch"); // fallback or native fetch in Node 18+
 require("dotenv").config();
 
 const {
   getMainMenuKeyboard,
   getBackKeyboard,
-  getDeleteConfirmKeyboard,
+  getTemplatesKeyboard,
 } = require("./keyboards");
 
-// توكن البوت
+// توكن البوت المستضيف
 const BOT_TOKEN =
   process.env.BOT_TOKEN ||
   "5777908472:AAHoyjbO-SouHb8Mw3aYl51zdTKpj3DQuog";
 
-if (!BOT_TOKEN) {
-  throw new Error("⚠️ يرجى تزويد توكن البوت في ملف .env تحت اسم BOT_TOKEN");
-}
-
-// إنشاء كائن البوت
 const bot = new Bot(BOT_TOKEN);
 
-// تخزين بسيط في الذاكرة لحالة المستخدمين (لعمل رابط جديد)
-const userStates = new Map();
+// جلسات المستخدمين لتتبع الخطوات (State Management)
+// key: userId -> value: { step: string, targetToken?: string, targetBotInfo?: object }
+const userSessions = new Map();
 
 /**
  * رسالة الترحيب الرئيسية
  */
 const WELCOME_MESSAGE = `
-👋 **مرحباً بك في بوت إدارة الويب هوك (Webhook Bot)**
+👋 **أهلاً بك في صانع ومقترن الويب هوك الشامل لبوتات تليجرام**
 
-هذا البوت عربي بالكامل، مصمم لمساعدتك في **ربط، فحص، وإدارة الويب هوك (Webhook)** لبوتات تليجرام بسهولة، ودعم الاستضافة غير الملموسة على **Vercel (Serverless Functions)**.
+هذا البوت عربي بالكامل، يتيح لك **ربط وتفعيل وفحص الويب هوك (Webhook) لأي بوت تليجرام آخر** من خلال إرسال التوكن ورابط الويب هوك أو ملف الكود!
 
-✨ **المميزات المتوفرة:**
-▫️ ℹ️ **فحص الويب هوك:** الاستعلام عن الرابط الحالي وعدد الرسائل المعلقة والأخطاء.
-▫️ 🔗 **ربط ويب هوك جديد:** إدخال أي رابط وسيقوم البوت بربطه فوراً مع Telegram API.
-▫️ 🗑️ **حذف الويب هوك:** إلغاء الويب هوك للعودة لنظام البولينج (Polling).
-▫️ 🤖 **بيانات البوت:** استخراج معرف ومعلومات البوت.
-▫️ 🚀 **دليل Vercel:** شرح خطوة بخطوة لرفع المشروعات على فيرسل.
+✨ **الخدمات المتاحة للبوتات الأخرى:**
+▫️ ➕ **ربط ويب هوك لبوت جديد:** إرسال التوكن ثم الرابط لربط أي بوت فوراً.
+▫️ ℹ️ **فحص ويب هوك أي بوت:** استعلام عن حالة الويب هوك المعلق والأخطاء لأي توكن.
+▫️ 🗑️ **حذف ويب هوك أي بوت:** إلغاء الويب هوك لأي بوت بالتوكن.
+▫️ 📂 **قوالب كود جاهزة:** تحميل ملفات سورس كود جاهزة للرفع على Vercel و PHP.
 
 اختر من القائمة التفاعلية أدناه للبدء:
 `;
@@ -44,30 +40,31 @@ const WELCOME_MESSAGE = `
 // الأوامر الرئيسية (Commands)
 // -------------------------------------------------------------
 
-// أمر البدء /start
 bot.command("start", async (ctx) => {
+  userSessions.delete(ctx.from.id);
   await ctx.reply(WELCOME_MESSAGE, {
     parse_mode: "Markdown",
     reply_markup: getMainMenuKeyboard(),
   });
 });
 
-// أمر المساعدة /help
 bot.command("help", async (ctx) => {
   const helpText = `
-📚 **قائمة الأوامر المتاحة في البوت:**
+📚 **دليل استخدام صانع ومقترن الويب هوك:**
 
-/start - إعادة تشغيل البوت وعرض القائمة الرئيسية
-/info - فحص حالة الويب هوك الحالي للبوت
-/set <رابط_الويب_هوك> - ربط البوت برابط ويب هوك جديد فوراً
-/delete - إلغاء وحذف الويب هوك الحالي
-/botinfo - عرض معلومات هذا البوت وحالته
-/help - عرض دليل المساعدة
+1️⃣ **لربط ويب هوك لبوت آخر:**
+أرسل /set ثم اتبع التعليمات لإرسال توكن البوت الآخر والرابط.
 
-💡 **مثال لربط ويب هوك عبر الأمر:**
-\`\`\`
-/set https://my-bot.vercel.app/api/webhook
-\`\`\`
+2️⃣ **لفحص حالة ويب هوك بوت آخر:**
+أرسل /info ثم أرسل توكن البوت المراد فحصه.
+
+3️⃣ **لحذف ويب هوك بوت آخر:**
+أرسل /delete ثم أرسل توكن البوت.
+
+💡 **أمثلة للأوامر المباشرة:**
+▫️ \`/set\` - بدء معالج ربط بوت جديد
+▫️ \`/info\` - فحص ويب هوك لبوت
+▫️ \`/delete\` - حذف ويب هوك للبوت
 `;
   await ctx.reply(helpText, {
     parse_mode: "Markdown",
@@ -75,35 +72,28 @@ bot.command("help", async (ctx) => {
   });
 });
 
-// أمر فحص الويب هوك /info
-bot.command("info", async (ctx) => {
-  await handleWebhookInfo(ctx);
-});
-
-// أمر ربط الويب هوك /set <URL>
 bot.command("set", async (ctx) => {
-  const urlArg = ctx.match ? ctx.match.trim() : "";
-  if (!urlArg) {
-    userStates.set(ctx.from.id, "WAITING_FOR_WEBHOOK_URL");
-    return ctx.reply(
-      "🔗 **يرجى إرسال رابط الويب هوك (URL) الذي تريد ربطه الآن:**\n\nيجب أن يبدأ الرابط بـ `https://` (مثال: `https://my-app.vercel.app/api/webhook`)",
-      { parse_mode: "Markdown", reply_markup: getBackKeyboard() }
-    );
-  }
-  await executeSetWebhook(ctx, urlArg);
+  userSessions.set(ctx.from.id, { step: "WAITING_FOR_TOKEN_SET" });
+  await ctx.reply(
+    "🔑 **الخطوة 1 من 2:**\n\nيرجى إرسال **التوكن (Bot Token)** الخاص بالبوت الذي تريد ربط الويب هوك له:\n\nمثال:\n`123456789:AAgX...`",
+    { parse_mode: "Markdown", reply_markup: getBackKeyboard() }
+  );
 });
 
-// أمر حذف الويب هوك /delete
+bot.command("info", async (ctx) => {
+  userSessions.set(ctx.from.id, { step: "WAITING_FOR_TOKEN_INFO" });
+  await ctx.reply(
+    "🔍 **يرجى إرسال التوكن (Bot Token) للبوت الذي تريد فحص الويب هوك الخاص به:**",
+    { parse_mode: "Markdown", reply_markup: getBackKeyboard() }
+  );
+});
+
 bot.command("delete", async (ctx) => {
-  await ctx.reply("⚠️ **هل أنت أصلًا متأكد من رغبتك في حذف الويب هوك الحالي؟**", {
-    parse_mode: "Markdown",
-    reply_markup: getDeleteConfirmKeyboard(),
-  });
-});
-
-// أمر بيانات البوت /botinfo
-bot.command("botinfo", async (ctx) => {
-  await handleBotInfo(ctx);
+  userSessions.set(ctx.from.id, { step: "WAITING_FOR_TOKEN_DELETE" });
+  await ctx.reply(
+    "🗑️ **يرجى إرسال التوكن (Bot Token) للبوت الذي تريد حذف الويب هوك منه:**",
+    { parse_mode: "Markdown", reply_markup: getBackKeyboard() }
+  );
 });
 
 // -------------------------------------------------------------
@@ -112,13 +102,13 @@ bot.command("botinfo", async (ctx) => {
 
 bot.callbackQuery("main_menu", async (ctx) => {
   await ctx.answerCallbackQuery();
-  userStates.delete(ctx.from.id);
+  userSessions.delete(ctx.from.id);
   try {
     await ctx.editMessageText(WELCOME_MESSAGE, {
       parse_mode: "Markdown",
       reply_markup: getMainMenuKeyboard(),
     });
-  } catch (err) {
+  } catch (e) {
     await ctx.reply(WELCOME_MESSAGE, {
       parse_mode: "Markdown",
       reply_markup: getMainMenuKeyboard(),
@@ -126,258 +116,475 @@ bot.callbackQuery("main_menu", async (ctx) => {
   }
 });
 
-bot.callbackQuery("webhook_info", async (ctx) => {
-  await ctx.answerCallbackQuery("جاري فحص الويب هوك...");
-  await handleWebhookInfo(ctx, true);
-});
-
-bot.callbackQuery("webhook_set_prompt", async (ctx) => {
-  await ctx.answerCallbackQuery();
-  userStates.set(ctx.from.id, "WAITING_FOR_WEBHOOK_URL");
-  const msg =
-    "🔗 **إعداد ويب هوك جديد:**\n\nأرسل الآن رابط الويب هوك الخاص بك (Webhook URL).\n\n⚠️ **ملاحظة:** ينبغي أن يتضمن الرابط البروتوكول `https://` ويكون صالحاً للاستقبال من سيرفرات تليجرام.";
-  await ctx.editMessageText(msg, {
+bot.callbackQuery("cancel_action", async (ctx) => {
+  await ctx.answerCallbackQuery("تم إلغاء العملية");
+  userSessions.delete(ctx.from.id);
+  await ctx.editMessageText("❌ **تم إلغاء العملية الحالية.**", {
     parse_mode: "Markdown",
-    reply_markup: getBackKeyboard(),
+    reply_markup: getMainMenuKeyboard(),
   });
 });
 
-bot.callbackQuery("webhook_delete_confirm", async (ctx) => {
+bot.callbackQuery("start_set_other", async (ctx) => {
   await ctx.answerCallbackQuery();
-  await ctx.editMessageText("⚠️ **هل تريد التأكيد على حذف وإلغاء الويب هوك الحالي؟**", {
-    parse_mode: "Markdown",
-    reply_markup: getDeleteConfirmKeyboard(),
-  });
+  userSessions.set(ctx.from.id, { step: "WAITING_FOR_TOKEN_SET" });
+  await ctx.editMessageText(
+    "🔑 **الخطوة 1 من 2: إرسال التوكن**\n\nيرجى إرسال **التوكن (Bot Token)** الخاص بالبوت الذي تريد ربطه الآن من BotFather:\n\nمثال:\n`5777908472:AAHoyjbO-SouHb8Mw3aYl51...`",
+    { parse_mode: "Markdown", reply_markup: getBackKeyboard() }
+  );
 });
 
-bot.callbackQuery("webhook_delete_execute", async (ctx) => {
-  await ctx.answerCallbackQuery("جاري حذف الويب هوك...");
-  try {
-    const success = await ctx.api.deleteWebhook({ drop_pending_updates: false });
-    if (success) {
-      await ctx.editMessageText(
-        "✅ **تم حذف وإلغاء الويب هوك بنجاح!**\n\nالبوت الآن لا يستخدم أي Webhook، ويمكنك تشغيله بطريقة Polling أو إعادة ربطه برابط جديد.",
-        { parse_mode: "Markdown", reply_markup: getBackKeyboard() }
-      );
-    } else {
-      await ctx.editMessageText("❌ لم يكتمل حذف الويب هوك، يرجى المحاولة لاحقاً.", {
-        parse_mode: "Markdown",
-        reply_markup: getBackKeyboard(),
-      });
-    }
-  } catch (err) {
-    await ctx.editMessageText(`❌ **حدث خطأ أثناء الحذف:**\n\`${err.message}\``, {
-      parse_mode: "Markdown",
-      reply_markup: getBackKeyboard(),
-    });
-  }
-});
-
-bot.callbackQuery("bot_info", async (ctx) => {
+bot.callbackQuery("start_info_other", async (ctx) => {
   await ctx.answerCallbackQuery();
-  await handleBotInfo(ctx, true);
+  userSessions.set(ctx.from.id, { step: "WAITING_FOR_TOKEN_INFO" });
+  await ctx.editMessageText(
+    "🔍 **فحص حالة الويب هوك:**\n\nأرسل توكن البوت المراد فحصه للاستعلام عن الرابط الحالي والأخطاء.",
+    { parse_mode: "Markdown", reply_markup: getBackKeyboard() }
+  );
 });
 
-bot.callbackQuery("test_msg", async (ctx) => {
-  await ctx.answerCallbackQuery("اختبار الرسائل...");
-  const dateStr = new Date().toLocaleString("ar-EG", { timeZone: "Africa/Cairo" });
-  const testText = `
-🧪 **رسالة اختبارية من بوت الويب هوك (Test Message)**
+bot.callbackQuery("start_delete_other", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  userSessions.set(ctx.from.id, { step: "WAITING_FOR_TOKEN_DELETE" });
+  await ctx.editMessageText(
+    "🗑️ **حذف وإلغاء الويب هوك:**\n\nأرسل توكن البوت الذي ترغب في إلغاء الويب هوك منه للعودة لنظام Polling.",
+    { parse_mode: "Markdown", reply_markup: getBackKeyboard() }
+  );
+});
 
-⏱️ **تاريخ ووقت الاختبار:** \`${dateStr}\`
-👤 **المستخدم:** [${ctx.from.first_name}](tg://user?id=${ctx.from.id}) (ID: \`${ctx.from.id}\`)
-⚡ **حالة الاتصال:** مستقر وجاهز للعمل 100%!
+bot.callbackQuery("this_bot_info", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const me = await ctx.api.getMe();
+  const infoText = `
+🤖 **معلومات صانع الويب هوك الحالي:**
+
+▫️ **الاسم:** ${me.first_name}
+▫️ **اليوزر:** @${me.username}
+▫️ **معرف البوت:** \`${me.id}\`
+▫️ **الوظيفة:** ربط وفحص وإدارة الويب هوك لأي بوت آخر بسهولة.
 `;
-  await ctx.reply(testText, {
+  await ctx.editMessageText(infoText, {
     parse_mode: "Markdown",
-    reply_markup: getBackKeyboard(),
+    reply_markup: getMainMenuKeyboard(),
+  });
+});
+
+bot.callbackQuery("download_templates", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  await ctx.editMessageText(
+    "📂 **قوالب وسورس كود الويب هوك الجاهزة:**\n\nاختر لغة البرمجة أو الإطار لعرض القالب الجاهز للنشر على Vercel أو الخوادم الشخصية:",
+    { parse_mode: "Markdown", reply_markup: getTemplatesKeyboard() }
+  );
+});
+
+bot.callbackQuery("tpl_nodejs", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const codeNode = `
+📜 **قالب Node.js (grammY + Express) لـ Vercel:**
+
+\`\`\`javascript
+const { Bot, webhookCallback } = require("grammy");
+const express = require("express");
+
+const bot = new Bot(process.env.BOT_TOKEN);
+
+bot.command("start", (ctx) => ctx.reply("أهلاً بك في البوت المربوط بالويب هوك!"));
+
+const app = express();
+app.use(express.json());
+
+// إضافة التوافقية مع Vercel Serverless
+app.use((req, res, next) => {
+  if (typeof req.header !== "function") {
+    req.header = (name) => req.headers[name ? name.toLowerCase() : ""];
+  }
+  next();
+});
+
+app.post("/api/webhook", webhookCallback(bot, "express"));
+
+module.exports = app;
+\`\`\`
+`;
+  await ctx.editMessageText(codeNode, {
+    parse_mode: "Markdown",
+    reply_markup: getTemplatesKeyboard(),
+  });
+});
+
+bot.callbackQuery("tpl_php", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const codePhp = `
+📜 **قالب PHP Webhook بسيط:**
+
+\`\`\`php
+<?php
+$token = "ضع_التوكن_هنا";
+$apiUrl = "https://api.telegram.org/bot" . $token;
+
+$content = file_get_contents("php://input");
+$update = json_decode($content, true);
+
+if (isset($update["message"])) {
+    $chat_id = $update["message"]["chat"]["id"];
+    $text = $update["message"]["text"];
+
+    if ($text == "/start") {
+        file_get_contents($apiUrl . "/sendMessage?chat_id=" . $chat_id . "&text=" . urlencode("أهلاً بك في بوت PHP!"));
+    }
+}
+?>
+\`\`\`
+`;
+  await ctx.editMessageText(codePhp, {
+    parse_mode: "Markdown",
+    reply_markup: getTemplatesKeyboard(),
+  });
+});
+
+bot.callbackQuery("tpl_python", async (ctx) => {
+  await ctx.answerCallbackQuery();
+  const codePy = `
+📜 **قالب Python (pyTelegramBotAPI + Flask):**
+
+\`\`\`python
+import os
+import telebot
+from flask import Flask, request
+
+bot = telebot.TeleBot(os.environ.get('BOT_TOKEN'))
+app = Flask(__name__)
+
+@bot.message_handler(commands=['start'])
+def start(message):
+    bot.reply_to(message, "مرحباً بك في بوت بايثون!")
+
+@app.route('/api/webhook', methods=['POST'])
+def webhook():
+    json_str = request.get_data().decode('UTF-8')
+    update = telebot.types.Update.de_json(json_str)
+    bot.process_new_updates([update])
+    return 'OK', 200
+
+if __name__ == '__main__':
+    app.run(port=5000)
+\`\`\`
+`;
+  await ctx.editMessageText(codePy, {
+    parse_mode: "Markdown",
+    reply_markup: getTemplatesKeyboard(),
   });
 });
 
 bot.callbackQuery("vercel_guide", async (ctx) => {
   await ctx.answerCallbackQuery();
   const vercelText = `
-🚀 **دليل نشر البوت على موقع Vercel (فيرتيكال/فيرسل):**
+🚀 **دليل نشر كود أي بوت على Vercel وربط الويب هوك:**
 
-1️⃣ **خطوة 1: رفع الكود على GitHub**
-أنشئ مستودع جديد (Repository) وارفعه إلى حسابك على GitHub.
-
-2️⃣ **خطوة 2: ربط المشروع بـ Vercel**
-افتح [Vercel.com](https://vercel.com) وانقر على **Add New Project** واختر المستودع.
-
-3️⃣ **خطوة 3: إضافة المتغيرات البيئية (Environment Variables)**
-في إعدادات Vercel أضف المتغير التالي:
-▫️ \`BOT_TOKEN\` = \`${BOT_TOKEN}\`
-
-4️⃣ **خطوة 4: تفعيل الويب هوك**
-بعد انتهاء عملية الـ Deploy، انسخ رابط مشروعك (مثال: \`https://my-bot.vercel.app\`) وافتح الرابط التالي في متصفحك:
-\`https://my-bot.vercel.app/api/set-webhook\`
-أو استخدم زر **ربط ويب هوك جديد** هنا وأرسل الرابط: \`https://my-bot.vercel.app/api/webhook\`
-
-✨ **مبروك! أصبح البوت يعمل 24/7 على Vercel بدون خادم مجاناً.**
+1️⃣ **الخطوة 1:** ارفع كود البوت الخص بك على **GitHub**.
+2️⃣ **الخطوة 2:** افتح [Vercel.com](https://vercel.com) وقم بعمل Import للمشروع.
+3️⃣ **الخطوة 3:** أضف توكن البوت الخص بك في قسم **Environment Variables** كـ \`BOT_TOKEN\`.
+4️⃣ **الخطوة 4:** بعد صدور رابط Vercel الخاص بمشروعك (مثال: \`https://mybot.vercel.app\`)، انسخ الرابط وافتح هذا البوت واضغط **➕ ربط ويب هوك لبوت آخر**!
 `;
   await ctx.editMessageText(vercelText, {
     parse_mode: "Markdown",
-    disable_web_page_preview: true,
-    reply_markup: getBackKeyboard(),
+    reply_markup: getMainMenuKeyboard(),
   });
 });
 
 // -------------------------------------------------------------
-// معالج الرسائل النصية العام (الاستجابة لروابط الويب هوك)
+// معالج استقبال الملفات والرسائل النصية والتوكنات
 // -------------------------------------------------------------
+
+// معالجة الرسائل النصية
 bot.on("message:text", async (ctx) => {
   const userId = ctx.from.id;
-  const state = userStates.get(userId);
   const text = ctx.message.text.trim();
+  const session = userSessions.get(userId);
 
-  // إذا كان المستخدم في حالة انتظار رابط
-  if (state === "WAITING_FOR_WEBHOOK_URL" || text.startsWith("http://") || text.startsWith("https://")) {
-    userStates.delete(userId);
-    await executeSetWebhook(ctx, text);
+  // إذا لم يكن هناك جلسة نشطة
+  if (!session) {
+    // التاكد مما إذا كان المرسل قد أرسل توكن بشكل مباشر (النمط القياسي للتوكن)
+    if (isTelegramToken(text)) {
+      await processTokenSetStep(ctx, text);
+      return;
+    }
+    return ctx.reply(
+      "💡 **أهلاً بك!** يرجى استخدام القائمة التفاعلية أدناه أو إرسال توكن البوت الذي تريد ربطه مباشرة:",
+      { parse_mode: "Markdown", reply_markup: getMainMenuKeyboard() }
+    );
+  }
+
+  // 1. انتظار إرسال التوكن للربط
+  if (session.step === "WAITING_FOR_TOKEN_SET") {
+    await processTokenSetStep(ctx, text);
     return;
   }
 
-  // الرد على أي رسالة أخرى
+  // 2. انتظار إرسال الرابط للربط بعد التأكد من التوكن
+  if (session.step === "WAITING_FOR_URL_OR_FILE") {
+    await processWebhookUrlStep(ctx, text, session);
+    return;
+  }
+
+  // 3. انتظار التوكن للفحص
+  if (session.step === "WAITING_FOR_TOKEN_INFO") {
+    await processTokenInfoStep(ctx, text);
+    return;
+  }
+
+  // 4. انتظار التوكن للحذف
+  if (session.step === "WAITING_FOR_TOKEN_DELETE") {
+    await processTokenDeleteStep(ctx, text);
+    return;
+  }
+});
+
+// معالجة استقبال الملفات (Document / File upload)
+bot.on("message:document", async (ctx) => {
+  const userId = ctx.from.id;
+  const session = userSessions.get(userId);
+  const doc = ctx.message.document;
+
+  if (session && session.step === "WAITING_FOR_URL_OR_FILE") {
+    await ctx.reply(
+      `📥 **تم استقبال الملف:** \`${doc.file_name}\` (${Math.round(doc.file_size / 1024)} KB)\n\n⚡ لربط هذا الملف بالويب هوك الخاص بـ **${session.targetBotInfo.first_name}** (@${session.targetBotInfo.username}):\n\n1️⃣ قم برفع هذا الملف إلى خادمك أو حسابك في **Vercel**.\n2️⃣ أرسل الآن رابط الويب هوك الخاص بالسيرفر (مثال: \`https://my-domain.com/api/webhook\` أو رابط Vercel المولد).`,
+      { parse_mode: "Markdown", reply_markup: getBackKeyboard() }
+    );
+    return;
+  }
+
   await ctx.reply(
-    "💡 أهلاً بك! يمكنك استخدام الأزرار في القائمة أدناه أو كتابة /help لرؤية الأوامر المتاحة.",
-    { reply_markup: getMainMenuKeyboard() }
+    `📥 **استقبلنا الملف:** \`${doc.file_name}\`.\n\nيرجى البدء بالضغط على **➕ ربط ويب هوك لبوت آخر** وإرسال التوكن أولاً لربط الملف بالبوت المطلوب.`,
+    { parse_mode: "Markdown", reply_markup: getMainMenuKeyboard() }
   );
 });
 
 // -------------------------------------------------------------
-// الدوال المساعدة (Helper Functions)
+// الدوال المساعدة للتحقق والربط
 // -------------------------------------------------------------
 
 /**
- * فحص وعرض حالة الويب هوك
+ * التحقق مما إذا كان النص يشبه نمط توكن تليجرام (مثل: 123456789:ABC...)
  */
-async function handleWebhookInfo(ctx, isEdit = false) {
+function isTelegramToken(str) {
+  return /^\d{8,12}:[A-Za-z0-9_-]{35,}$/.test(str.trim());
+}
+
+/**
+ * خطوة التأكد من التوكن وجلب معلومات البوت
+ */
+async function processTokenSetStep(ctx, tokenText) {
+  const targetToken = tokenText.trim();
+
+  if (!isTelegramToken(targetToken)) {
+    return ctx.reply(
+      "❌ **صيغة التوكن غير صحيحة!**\n\nتأكد من نسخ التوكن كاملاً من BotFather (مثال: `5777908472:AAHoyjbO-SouHb...`) وأعد المحاولة.",
+      { parse_mode: "Markdown", reply_markup: getBackKeyboard() }
+    );
+  }
+
+  const checkMsg = await ctx.reply("🔄 **جاري التحقق من التوكن عبر Telegram API...**", {
+    parse_mode: "Markdown",
+  });
+
   try {
-    const info = await ctx.api.getWebhookInfo();
-    const hasUrl = info.url && info.url.length > 0;
+    // إنشاء كائن بوت مؤقت للبوت المستهدف للاستعلام عنه
+    const targetBot = new Bot(targetToken);
+    const targetInfo = await targetBot.api.getMe();
 
-    let errorDetails = "لا يوجد أخطاء سابقة ✨";
-    if (info.last_error_date) {
-      const errDate = new Date(info.last_error_date * 1000).toLocaleString("ar-EG");
-      errorDetails = `⚠️ **آخر خطأ:** \`${info.last_error_message || "غير معروف"}\`\n🗓️ **التاريخ:** \`${errDate}\``;
-    }
+    // حفظ الجلسة للانتقال للخطوة التالية
+    userSessions.set(ctx.from.id, {
+      step: "WAITING_FOR_URL_OR_FILE",
+      targetToken: targetToken,
+      targetBotInfo: targetInfo,
+    });
 
-    const messageContent = `
-ℹ️ **تفاصيل حالة الويب هوك الحالي (Webhook Info):**
+    const successText = `
+✅ **تم التحقق من التوكن بنجاح!**
 
-🌐 **رابط الويب هوك:**
-${hasUrl ? `\`${info.url}\`` : "❌ **غير مرتبط بأي رابط حالياً**"}
+🤖 **بيانات البوت المستهدف:**
+▫️ **الاسم:** ${targetInfo.first_name}
+▫️ **اليوزر:** @${targetInfo.username}
+▫️ **ID:** \`${targetInfo.id}\`
 
-📊 **حالة الاتصال والتحديثات:**
-▫️ **التحديثات المعلقة (Pending Updates):** \`${info.pending_update_count}\`
-▫️ **شهادة أمان مخصصة (Custom Cert):** ${info.has_custom_certificate ? "نعم ✅" : "لا ❌"}
-▫️ **الحد الأقصى للاتصالات (Max Connections):** \`${info.max_connections || 40}\`
-
-${errorDetails}
+---
+🌐 **الخطوة 2 من 2:**
+أرسل الآن **رابط الويب هوك (URL)** الخاص بسيرفرك أو تطبيقك على Vercel (مثال: \`https://your-app.vercel.app/api/webhook\`) أو قم برفع ملف الكود الخاص بك هنا.
 `;
 
-    if (isEdit) {
-      await ctx.editMessageText(messageContent, {
-        parse_mode: "Markdown",
-        reply_markup: getBackKeyboard(),
-      });
-    } else {
-      await ctx.reply(messageContent, {
-        parse_mode: "Markdown",
-        reply_markup: getBackKeyboard(),
-      });
-    }
+    await ctx.api.editMessageText(ctx.chat.id, checkMsg.message_id, successText, {
+      parse_mode: "Markdown",
+      reply_markup: getBackKeyboard(),
+    });
   } catch (err) {
-    const errMsg = `❌ **حدث خطأ أثناء إحضار بيانات الويب هوك:**\n\`${err.message}\``;
-    if (isEdit) {
-      await ctx.editMessageText(errMsg, { parse_mode: "Markdown", reply_markup: getBackKeyboard() });
-    } else {
-      await ctx.reply(errMsg, { parse_mode: "Markdown", reply_markup: getBackKeyboard() });
-    }
+    await ctx.api.editMessageText(
+      ctx.chat.id,
+      checkMsg.message_id,
+      `❌ **التوكن غير صحيح أو تم إلغاؤه من BotFather!**\n\nتفاصيل الخطأ:\n\`${err.message}\``,
+      { parse_mode: "Markdown", reply_markup: getBackKeyboard() }
+    );
   }
 }
 
 /**
- * تطبيق تفعيل الويب هوك برابط محدد
+ * خطوة تنفيذ ربط الويب هوك بالرابط للبوت المستهدف
  */
-async function executeSetWebhook(ctx, rawUrl) {
-  let targetUrl = rawUrl.trim();
+async function processWebhookUrlStep(ctx, urlText, session) {
+  let targetUrl = urlText.trim();
 
-  // تصحيح الرابط إذا لزم الأمر
   if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
     targetUrl = "https://" + targetUrl;
   }
 
   if (!targetUrl.startsWith("https://")) {
     return ctx.reply(
-      "❌ **خطأ:** يتطلب تليجرام أن يكون رابط الويب هوك مشفراً بـ `https://` آمناً.\nيرجى إعادة المحاولة برابط صحيح.",
+      "❌ **خطأ:** يتطلب تليجرام أن يكون الرابط مشفراً وآمناً بـ `https://`.\nيرجى إعادة المحاولة برابط صحيح.",
       { parse_mode: "Markdown", reply_markup: getBackKeyboard() }
     );
   }
 
-  const statusMsg = await ctx.reply(`🔄 **جاري جلب الاتصال وربط الويب هوك بـ:**\n\`${targetUrl}\`...`, {
-    parse_mode: "Markdown",
-  });
+  const statusMsg = await ctx.reply(
+    `🔄 **جاري ربط الويب هوك للبوت (@${session.targetBotInfo.username})...**`,
+    { parse_mode: "Markdown" }
+  );
 
   try {
-    const isOk = await ctx.api.setWebhook(targetUrl, {
-      drop_pending_updates: false,
+    const targetBot = new Bot(session.targetToken);
+    const isOk = await targetBot.api.setWebhook(targetUrl, {
+      drop_pending_updates: true,
     });
+
+    userSessions.delete(ctx.from.id);
+
+    if (isOk) {
+      const resultText = `
+🎉 **تم ربط الويب هوك بنجاح للبوت الآخر!**
+
+🤖 **البوت المرتبط:** ${session.targetBotInfo.first_name} (@${session.targetBotInfo.username})
+🌐 **رابط الويب هوك (URL):**
+\`${targetUrl}\`
+
+✨ **الحالة:** تليجرام يقوم الآن بتوجيه جميع الرسائل والتحديثات فورياً لهذا الرابط!
+`;
+      await ctx.api.editMessageText(ctx.chat.id, statusMsg.message_id, resultText, {
+        parse_mode: "Markdown",
+        reply_markup: getMainMenuKeyboard(),
+      });
+    } else {
+      await ctx.api.editMessageText(
+        ctx.chat.id,
+        statusMsg.message_id,
+        "❌ فشل ربط الويب هوك للبوت المستهدف. تأكد من أن السيرفر يعمل ويستجيب بشكل صحيح.",
+        { parse_mode: "Markdown", reply_markup: getMainMenuKeyboard() }
+      );
+    }
+  } catch (err) {
+    userSessions.delete(ctx.from.id);
+    await ctx.api.editMessageText(
+      ctx.chat.id,
+      statusMsg.message_id,
+      `❌ **فشل ربط الويب هوك بسبب خطأ من Telegram API:**\n\`${err.message}\``,
+      { parse_mode: "Markdown", reply_markup: getMainMenuKeyboard() }
+    );
+  }
+}
+
+/**
+ * خطوة فحص حالة الويب هوك لبوت بالتوكن
+ */
+async function processTokenInfoStep(ctx, tokenText) {
+  const targetToken = tokenText.trim();
+  userSessions.delete(ctx.from.id);
+
+  if (!isTelegramToken(targetToken)) {
+    return ctx.reply("❌ صيغة التوكن غير صحيحة!", { reply_markup: getMainMenuKeyboard() });
+  }
+
+  const statusMsg = await ctx.reply("🔄 **جاري فحص حالة الويب هوك...**", { parse_mode: "Markdown" });
+
+  try {
+    const targetBot = new Bot(targetToken);
+    const [botInfo, webhookInfo] = await Promise.all([
+      targetBot.api.getMe(),
+      targetBot.api.getWebhookInfo(),
+    ]);
+
+    let errorDetails = "لا يوجد أخطاء سابقة ✨";
+    if (webhookInfo.last_error_date) {
+      const errDate = new Date(webhookInfo.last_error_date * 1000).toLocaleString("ar-EG");
+      errorDetails = `⚠️ **آخر خطأ:** \`${webhookInfo.last_error_message || "غير معروف"}\`\n🗓️ **التاريخ:** \`${errDate}\``;
+    }
+
+    const reportText = `
+ℹ️ **تقرير الويب هوك للبوت (${botInfo.first_name} - @${botInfo.username}):**
+
+▫️ **معرف البوت (ID):** \`${botInfo.id}\`
+▫️ **حالة الويب هوك:** ${webhookInfo.url ? "مفعل ومربوط ✅" : "غير مرتبط حالياً ❌"}
+🌐 **الرابط المرتبط:**
+${webhookInfo.url ? `\`${webhookInfo.url}\`` : "لا يوجد"}
+
+📊 **بيانات الاتصال:**
+▫️ **الرسائل المعلقة (Pending):** \`${webhookInfo.pending_update_count}\`
+▫️ **الحد الأقصى للاتصالات:** \`${webhookInfo.max_connections || 40}\`
+
+${errorDetails}
+`;
+
+    await ctx.api.editMessageText(ctx.chat.id, statusMsg.message_id, reportText, {
+      parse_mode: "Markdown",
+      reply_markup: getMainMenuKeyboard(),
+    });
+  } catch (err) {
+    await ctx.api.editMessageText(
+      ctx.chat.id,
+      statusMsg.message_id,
+      `❌ **تعذر فحص الويب هوك:**\n\`${err.message}\``,
+      { parse_mode: "Markdown", reply_markup: getMainMenuKeyboard() }
+    );
+  }
+}
+
+/**
+ * خطوة حذف الويب هوك لبوت بالتوكن
+ */
+async function processTokenDeleteStep(ctx, tokenText) {
+  const targetToken = tokenText.trim();
+  userSessions.delete(ctx.from.id);
+
+  if (!isTelegramToken(targetToken)) {
+    return ctx.reply("❌ صيغة التوكن غير صحيحة!", { reply_markup: getMainMenuKeyboard() });
+  }
+
+  const statusMsg = await ctx.reply("🔄 **جاري حذف الويب هوك...**", { parse_mode: "Markdown" });
+
+  try {
+    const targetBot = new Bot(targetToken);
+    const botInfo = await targetBot.api.getMe();
+    const isOk = await targetBot.api.deleteWebhook({ drop_pending_updates: false });
 
     if (isOk) {
       await ctx.api.editMessageText(
         ctx.chat.id,
         statusMsg.message_id,
-        `✅ **تم ربط الويب هوك بنجاح!**\n\n🌐 **الرابط المرتبط:**\n\`${targetUrl}\`\n\nسيرسل تليجرام الآن جميع الرسائل والتحديثات فورياً لهذا الرابط.`,
-        { parse_mode: "Markdown", reply_markup: getBackKeyboard() }
+        `✅ **تم حذف وإلغاء الويب هوك بنجاح للبوت (${botInfo.first_name} - @${botInfo.username})!**\n\nالبوت الآن جاهز للعمل بنظام Polling أو إعادة الربط.`,
+        { parse_mode: "Markdown", reply_markup: getMainMenuKeyboard() }
       );
     } else {
       await ctx.api.editMessageText(
         ctx.chat.id,
         statusMsg.message_id,
-        "❌ فشل ربط الويب هوك. يرجى التأكد من أن السيرفر يعمل ويقبل طلبات HTTPS.",
-        { parse_mode: "Markdown", reply_markup: getBackKeyboard() }
+        "❌ لم يكتمل حذف الويب هوك، يرجى إعادة المحاولة.",
+        { parse_mode: "Markdown", reply_markup: getMainMenuKeyboard() }
       );
     }
   } catch (err) {
     await ctx.api.editMessageText(
       ctx.chat.id,
       statusMsg.message_id,
-      `❌ **فشل الربط بسبب خطأ من تليجرام:**\n\`${err.message}\``,
-      { parse_mode: "Markdown", reply_markup: getBackKeyboard() }
+      `❌ **حدث خطأ أثناء الحذف:**\n\`${err.message}\``,
+      { parse_mode: "Markdown", reply_markup: getMainMenuKeyboard() }
     );
-  }
-}
-
-/**
- * عرض بيانات البوت
- */
-async function handleBotInfo(ctx, isEdit = false) {
-  try {
-    const me = await ctx.api.getMe();
-    const botText = `
-🤖 **بيانات البوت الحالي (Bot Info):**
-
-▫️ **الاسم:** ${me.first_name} ${me.last_name || ""}
-▫️ **اليوزر نيم:** @${me.username}
-▫️ **معرف البوت (ID):** \`${me.id}\`
-▫️ **الانضمام للمجموعات:** ${me.can_join_groups ? "مسموح ✅" : "غير مسموح ❌"}
-▫️ **قراءة جميع الرسائل:** ${me.can_read_all_group_messages ? "مفعل 🔓" : "معطل (المشرفين فقط) 🔒"}
-▫️ **الدعم المباشر:** يعمل وجاهز للربط على Vercel!
-`;
-    if (isEdit) {
-      await ctx.editMessageText(botText, { parse_mode: "Markdown", reply_markup: getBackKeyboard() });
-    } else {
-      await ctx.reply(botText, { parse_mode: "Markdown", reply_markup: getBackKeyboard() });
-    }
-  } catch (err) {
-    const errMsg = `❌ **تعذر جلب بيانات البوت:**\n\`${err.message}\``;
-    if (isEdit) {
-      await ctx.editMessageText(errMsg, { parse_mode: "Markdown", reply_markup: getBackKeyboard() });
-    } else {
-      await ctx.reply(errMsg, { parse_mode: "Markdown", reply_markup: getBackKeyboard() });
-    }
   }
 }
 

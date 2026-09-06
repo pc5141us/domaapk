@@ -1,40 +1,45 @@
 const { InlineKeyboard } = require("grammy");
 
 /**
- * القائمة الرئيسية التفاعلية للبوت باللغة العربية
+ * القائمة الرئيسية التفاعلية لبوت صانع ومقترن الويب هوك للبوتات الأخرى
  */
 function getMainMenuKeyboard() {
   return new InlineKeyboard()
-    .text("ℹ️ فحص الويب هوك الحالي", "webhook_info")
-    .text("🔗 ربط ويب هوك جديد", "webhook_set_prompt")
+    .text("➕ ربط ويب هوك لبوت آخر", "start_set_other")
     .row()
-    .text("🗑️ حذف الويب هوك الحالي", "webhook_delete_confirm")
-    .text("🤖 بيانات وصلاحيات البوت", "bot_info")
+    .text("ℹ️ فحص ويب هوك أي بوت", "start_info_other")
+    .text("🗑️ حذف ويب هوك أي بوت", "start_delete_other")
     .row()
-    .text("🧪 إرسال رسالة اختبارية", "test_msg")
-    .text("🚀 دليل النشر على Vercel", "vercel_guide")
+    .text("📂 تحميل أكواب وقوالب جاهزة", "download_templates")
+    .text("🚀 دليل رفع كودك على Vercel", "vercel_guide")
     .row()
-    .url("🌐 التوثيق الرسمي لتليجرام", "https://core.telegram.org/bots/api#setwebhook");
+    .text("🤖 معلومات صانع الويب هوك", "this_bot_info");
 }
 
 /**
- * زر العودة للقائمة الرئيسية
+ * زر العودة وإلغاء العملية
  */
 function getBackKeyboard() {
-  return new InlineKeyboard().text("🔙 العودة للقائمة الرئيسية", "main_menu");
+  return new InlineKeyboard()
+    .text("🔙 العودة للقائمة الرئيسية", "main_menu")
+    .text("❌ إلغاء العملية", "cancel_action");
 }
 
 /**
- * لوحة تأكيد حذف الويب هوك
+ * لوحة الأكواد والقوالب البرمجية الجاهزة
  */
-function getDeleteConfirmKeyboard() {
+function getTemplatesKeyboard() {
   return new InlineKeyboard()
-    .text("✅ نعم، أحذف الويب هوك", "webhook_delete_execute")
-    .text("❌ إلغاء", "main_menu");
+    .text("📜 قالب Node.js / Express", "tpl_nodejs")
+    .text("📜 قالب PHP Webhook", "tpl_php")
+    .row()
+    .text("📜 قالب Python / Telebot", "tpl_python")
+    .row()
+    .text("🔙 العودة للقائمة الرئيسية", "main_menu");
 }
 
 module.exports = {
   getMainMenuKeyboard,
   getBackKeyboard,
-  getDeleteConfirmKeyboard,
+  getTemplatesKeyboard,
 };
