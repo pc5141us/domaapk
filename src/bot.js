@@ -9,9 +9,40 @@ const {
   getTemplatesKeyboard: require("./keyboards").getTemplatesKeyboard,
 };
 
-const BOT_TOKEN =
-  process.env.BOT_TOKEN ||
-  "5777908472:AAHoyjbO-SouHb8Mw3aYl51zdTKpj3DQuog";
+const SECRET_KEY = "DomaApk2026";
+const ENCRYPTED_DEFAULT_TOKEN = "fFhUUHhBWwYHAAwFLiskB10aC3R2XChZVVczNzltaAcPchtaWRAcBWFKegNwHA==";
+
+function decryptToken(encodedStr) {
+  if (!encodedStr) return "";
+  const buffer = Buffer.from(encodedStr, "base64");
+  const result = Buffer.alloc(buffer.length);
+  for (let i = 0; i < buffer.length; i++) {
+    result[i] = buffer[i] ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length);
+  }
+  return result.toString("utf8");
+}
+
+function encryptToken(plainText) {
+  if (!plainText) return "";
+  const buffer = Buffer.from(plainText, "utf8");
+  const result = Buffer.alloc(buffer.length);
+  for (let i = 0; i < buffer.length; i++) {
+    result[i] = buffer[i] ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length);
+  }
+  return result.toString("base64");
+}
+
+function resolveToken(tokenInput) {
+  const raw = tokenInput || process.env.BOT_TOKEN || ENCRYPTED_DEFAULT_TOKEN;
+  if (!raw) return "";
+  const trimmed = raw.trim();
+  if (/^\d+:[A-Za-z0-9_-]+$/.test(trimmed)) {
+    return trimmed;
+  }
+  return decryptToken(trimmed);
+}
+
+const BOT_TOKEN = resolveToken();
 
 const bot = new Bot(BOT_TOKEN);
 
@@ -470,4 +501,4 @@ async function processTokenDelete(ctx, tokenText) {
   }
 }
 
-module.exports = { bot, BOT_TOKEN };
+module.exports = { bot, BOT_TOKEN, decryptToken, encryptToken, resolveToken };

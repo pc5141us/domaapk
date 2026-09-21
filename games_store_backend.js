@@ -1,5 +1,20 @@
 // --- لوحة تحكم متجر دوما APK - الإصدار النهائي الشامل V15 ---
-const botToken = "8791910472:AAFV5-CMq0QuOnPGa8QR-UmxTGOWOjySrds";
+var secretKey = "DomaApk2026";
+var encryptedToken = "fFhUUHhBWwYHAAwFLiskB10aC3R2XChZVVczNzltaAcPchtaWRAcBWFKegNwHA==";
+
+function decryptTokenGAS(encoded) {
+  var decodedBytes = Utilities.base64Decode(encoded);
+  var result = "";
+  for (var i = 0; i < decodedBytes.length; i++) {
+    var byteVal = decodedBytes[i];
+    if (byteVal < 0) byteVal += 256;
+    var keyChar = secretKey.charCodeAt(i % secretKey.length);
+    result += String.fromCharCode(byteVal ^ keyChar);
+  }
+  return result;
+}
+
+const botToken = decryptTokenGAS(encryptedToken);
 const adminId = 682572594; 
 const telegramUrl = "https://api.telegram.org/bot" + botToken;
 

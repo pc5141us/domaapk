@@ -1,7 +1,8 @@
 const { Bot } = require("grammy");
 require("dotenv").config();
+const { BOT_TOKEN } = require("../src/bot");
 
-const token = process.env.BOT_TOKEN || "5777908472:AAHoyjbO-SouHb8Mw3aYl51zdTKpj3DQuog";
+const token = process.env.BOT_TOKEN || BOT_TOKEN;
 const bot = new Bot(token);
 
 async function testBot() {

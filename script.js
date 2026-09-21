@@ -3,14 +3,26 @@ const GAMES_API_URL = "https://script.google.com/macros/s/AKfycbwaYQWtzwHx4MoWCv
 let appsData = [];
 let lastDataHash = "";
 
-// وظيفة لتحويل البيانات إلى نص للمقارنة ومنع التحديث إذا لم تتغير
+// وظيفة للحصول على تقييم ثابت بناءً على المعرف لمنع التغير التكراري للبيانات
+function getDeterministicRating(id, index) {
+    let str = String(id || index);
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+    }
+    const score = 4.5 + (Math.abs(hash) % 6) * 0.1;
+    return score.toFixed(1);
+}
+
+// وظيفة لتحويل البيانات إلى نص للمقارنة ومنع التحديث البصري إذا لم تتغير البيانات
 function getHash(obj) {
     return JSON.stringify(obj);
 }
 
 async function fetchApps(isBackground = false) {
     const appGrid = document.getElementById('appGrid');
-    if (!isBackground) appGrid.classList.add('loading');
+    if (!isBackground && appGrid) appGrid.classList.add('loading');
     
     try {
         const response = await fetch(`${GAMES_API_URL}?t=${Date.now()}`);
@@ -18,7 +30,7 @@ async function fetchApps(isBackground = false) {
 
         const currentHash = getHash(data);
         if (currentHash === lastDataHash) {
-            console.log("No changes in data, skipping render.");
+            console.log("لا توجد تغييرات في البيانات، تم تجاوز إعادة التوليد المرئي.");
             return;
         }
         lastDataHash = currentHash;
@@ -28,8 +40,8 @@ async function fetchApps(isBackground = false) {
         if (!data || data.length === 0) {
             appsData = [];
         } else {
-            appsData = data.map(item => ({
-                id: item.id,
+            appsData = data.map((item, idx) => ({
+                id: item.id || `app_${idx}`,
                 name: item.title,
                 description: item.description,
                 category: item.category,
@@ -38,19 +50,19 @@ async function fetchApps(isBackground = false) {
                 icon: item.icon || "https://cdn-icons-png.flaticon.com/512/1152/1152912.png",
                 image: item.banner || "https://images.unsplash.com/photo-1607252650355-f7fd0460ccdb",
                 downloadLink: item.previewUrl,
-                rating: (Math.random() * (5 - 4.5) + 4.5).toFixed(1)
+                rating: getDeterministicRating(item.id, idx)
             }));
         }
 
-        renderApps();
+        renderApps(isBackground);
     } catch (error) {
         console.error("Error fetching apps:", error);
         if (!isBackground) {
             appsData = [];
-            renderApps();
+            renderApps(false);
         }
     } finally {
-        if (!isBackground) appGrid.classList.remove('loading');
+        if (!isBackground && appGrid) appGrid.classList.remove('loading');
     }
 }
 
@@ -58,8 +70,10 @@ let currentCategory = 'all';
 let currentFilter = 'all';
 let searchQuery = '';
 
-function renderApps() {
+function renderApps(isSilent = false) {
     const appGrid = document.getElementById('appGrid');
+    if (!appGrid) return;
+
     const filteredApps = appsData.filter(app => {
         const matchesCategory = currentCategory === 'all' || app.category === currentCategory;
         const matchesFilter = currentFilter === 'all' || app.tag === currentFilter;
@@ -67,17 +81,50 @@ function renderApps() {
         return matchesCategory && matchesFilter && matchesSearch;
     });
 
-    appGrid.innerHTML = '';
-
     if (filteredApps.length === 0) {
         appGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-dim); padding: 3rem;">لا توجد نتائج تطابق بحثك.</div>';
         return;
     }
 
+    // تحديث صامت للبيانات داخل العناصر الموجودة دون مسح الهيكل أو إعادة تشغيل الأنيميشن المرئي
+    const existingCards = appGrid.querySelectorAll('.app-card');
+    if (isSilent && existingCards.length === filteredApps.length) {
+        let allUpdated = true;
+        filteredApps.forEach((app, index) => {
+            const card = existingCards[index];
+            if (card && card.dataset.appId === String(app.id)) {
+                const bannerEl = card.querySelector('.app-banner');
+                if (bannerEl) bannerEl.style.backgroundImage = `url('${app.image}')`;
+
+                const iconEl = card.querySelector('.app-icon');
+                if (iconEl && iconEl.src !== app.icon) iconEl.src = app.icon;
+
+                const nameEl = card.querySelector('.app-name');
+                if (nameEl && nameEl.innerText !== app.name) nameEl.innerText = app.name;
+
+                const metaEl = card.querySelector('.app-meta');
+                if (metaEl) {
+                    metaEl.innerHTML = `
+                        <span><i class="fas fa-hdd"></i> ${app.size}</span>
+                        <span class="app-rating"><i class="fas fa-star"></i> ${app.rating}</span>
+                    `;
+                }
+            } else {
+                allUpdated = false;
+            }
+        });
+
+        if (allUpdated) return;
+    }
+
+    appGrid.innerHTML = '';
+
     filteredApps.forEach((app, index) => {
         const card = document.createElement('div');
-        card.className = 'app-card fade-in';
-        card.style.animationDelay = `${index * 0.05}s`;
+        // عدم إضافة fade-in عند التحديث الصامت لمنع التلميض والمرئيات التكرارية
+        card.className = isSilent ? 'app-card' : 'app-card fade-in';
+        if (!isSilent) card.style.animationDelay = `${index * 0.05}s`;
+        card.dataset.appId = app.id;
         card.innerHTML = `
             <div class="app-banner" style="background-image: url('${app.image}')"></div>
             <div class="app-info">
@@ -206,10 +253,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // جلب البيانات لأول مرة
     fetchApps();
 
-    // تحديث البيانات كل ثانية واحدة (تحديث فوري فائق السرعة)
+    // تحديث البيانات في الخلفية بشكل صامت وبدون إعادة رسم مرئي كل 15 ثانية
     setInterval(() => {
         fetchApps(true);
-    }, 1000);
+    }, 15000);
 
     searchInput.addEventListener('input', (e) => {
         searchQuery = e.target.value.toLowerCase();
